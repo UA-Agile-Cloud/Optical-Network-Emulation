@@ -1,0 +1,3 @@
+link_num
+link_id	link_type	src_node_ip	src_port_id	src_domain_id	dst_node_ip	dst_port_id	dst_domain_id	length	ITU_standards	chnl_num
+...

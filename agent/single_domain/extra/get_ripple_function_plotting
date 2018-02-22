@@ -1,0 +1,3 @@
+#!/bin/bash
+# Establish connection with host machine toan
+sftp toan@192.168.56.1:/home/toan/Alan/ArizonaEx/single_domain/ryu_optical_agent/script_ripple_function_plotting.py

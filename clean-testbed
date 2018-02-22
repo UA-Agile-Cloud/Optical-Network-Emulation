@@ -1,0 +1,4 @@
+#!/bin/bash
+kill -9 `ps aux | grep ryu | grep root | awk '{print $2}'`
+kill -9 `ps aux | grep ryu_agent | grep root | awk '{print $2}'`
+sh network/telefonica/clean-net

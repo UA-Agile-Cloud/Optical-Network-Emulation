@@ -1,0 +1,13 @@
+#!/bin/bash
+# Modify lines in files:
+# Inter_domain_connection_ctrl.py
+# Path_computation.py
+# Monitoring.py
+
+wavelength=$1
+
+sed -i "164s/.*/\t\t\t\t\t\    start_channel=${wavelength},/" controller/src/Intra_domain_connection_ctrl.py
+sed -i "185s/.*/\t\tremote_mininet_client.main(new_lsp.traf_id, scr_node_id, dest_node_id, hex(${wavelength}))/" controller/src/Intra_domain_connection_ctrl.py     
+sed -i "997s/.*/\t\    c_band_lambda = (1530+${wavelength}*0.4)*10e-9/" controller/src/Path_computation.py
+sed -i "81s/.*/\t\t\t\t\t\t\t\t\    start_channel=${wavelength},/" controller/src/Monitoring.py
+sed -i "103s/.*/\t\t\t\t\t\t\t\t\    start_channel=${wavelength},/" controller/src/Monitoring.py

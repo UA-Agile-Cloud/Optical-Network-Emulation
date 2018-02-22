@@ -1,0 +1,1 @@
+ryu-manager --verbose --ofp-tcp-listen-port 6666 --wsapi-port 8080 Cross_domain_connection_ctrl.py EastWest_bound_message_receiving.py EastWest_bound_message_sending.py Path_computation.py Initialization.py Intra_domain_connection_ctrl.py Monitoring.py South_bound_message_receiving.py handshake.py North_bound_message_receiving.py

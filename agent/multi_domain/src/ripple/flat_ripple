@@ -1,0 +1,5 @@
+#!/bin/bash
+for i in {1..90}
+do
+	printf "0\n" >> flat_ripple.txt
+done

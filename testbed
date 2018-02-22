@@ -1,0 +1,40 @@
+#!/bin/bash
+
+for i in {1..2..1}
+do
+	# First band
+	if [ $i == 1 ]; then
+		init_wave=12
+		end_wave=30
+	# Second band
+	else
+		init_wave=42
+		end_wave=60
+	fi
+
+	traffic_file="/var/opt/sdn-optical/java-app/user_request.txt"
+	while IFS= read -r line 
+	do
+		for (( wavelength=$init_wave; wavelength<=$end_wave; wavelength+=2 ))
+	#	for wavelength in {12..30..2}
+			do
+				sh replace_lines $wavelength
+				sh controller/run &
+				sh agent/multi_domain/run_agent_1 &
+				sleep 5
+				sh network/telefonica/run &
+				sleep 8
+				cd java-app
+				sh run $line &
+				sleep 30
+				cd ..
+				sudo ./clean-testbed
+				sleep 15
+		done
+	done < "$traffic_file"
+done
+
+sleep 0.1
+chmod 766 controller/log/*
+sleep 0.1
+chmod 766 agent/multi_domain/logs/*

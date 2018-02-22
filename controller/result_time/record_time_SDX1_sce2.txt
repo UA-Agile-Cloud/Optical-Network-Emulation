@@ -1,0 +1,18 @@
+eastwest path computation time: (route_type = 1) 
+0.00164699554443
+South setup time: (route_type = 1)
+0.221301078796
+eastwest setup time: (route_type = 1)
+0.128129959106
+South OSNR monitoring: (route_type = 1) 
+0.174967050552
+eastwest path computation time: (route_type = 4) 
+0.00325012207031
+South setup time: (route_type = 4)
+0.220355033875
+eastwest setup time: (route_type = 4)
+0.153490781784
+South OSNR monitoring: (route_type = 4) 
+0.143356084824
+eastwest osnr monitor time: (route_type = 4)
+0.151176929474
