@@ -1,0 +1,4 @@
+#!/bin/bash
+rm /var/opt/sdn-optical/network/logs/*
+touch /var/opt/sdn-optical/network/logs/network.log
+touch /var/opt/sdn-optical/network/logs/probing_packet.log
