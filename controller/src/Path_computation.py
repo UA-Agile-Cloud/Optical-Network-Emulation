@@ -11,7 +11,6 @@ Last modified by Yao: 2017/05/19
 """
 from ryu.base import app_manager
 from ryu.controller.handler import set_ev_cls
-import time
 from Common import *
 import Database
 import Custom_event
@@ -19,7 +18,6 @@ import logging
 import RWA_shortestpath_random as RWA
 from Common import log_level
 import scipy.constants as sc
-import generate_rules
 import link_distance_mapping
 from time import sleep
 import random
@@ -67,17 +65,14 @@ class Path_computation(app_manager.RyuApp):
             #destination_node_id = Database.Data.phy_topo.get_node_id_by_ip(traf.dst_node_ip)
             sources = list()
             traf_add_port_id = Database.Data.phy_topo.get_traf_add_port(traf.src_node_ip)
-            print traf.src_node_ip
             if traf_add_port_id == None:
                 self.logger.critical('Cannot find an add port. (Path_computation: _handle_intra_domain_traffic_pc_request)')
-                print 'non-addport'
+                print('non-addport')
                 return
             common_avai_chnls = Database.Data.phy_topo.get_traf_add_port_resouce(traf.src_node_ip, traf_add_port_id)
-            print "Path_computation: common_avai_chnls"
-            print common_avai_chnls
             if common_avai_chnls == None:
                 self.logger.critical('Cannot find an add port. (Path_computation: _handle_intra_domain_traffic_pc_request)')
-                print 'non-avachnls'
+                print('non-avachnls')
                 return
             sources.append([traf.src_node_ip, traf_add_port_id, ROUTE_WORKING, 0, common_avai_chnls])
             destinations = list()
@@ -86,24 +81,18 @@ class Path_computation(app_manager.RyuApp):
                 self.logger.critical('Cannot find an drop port. (Path_computation: _handle_intra_domain_traffic_pc_request)')
                 return
             destinations.append([traf.dst_node_ip, traf_drop_port_id])
-            #paths = RWA.routing(ev.traf_id, sources, destinations, traf.bw_demand)    #routing. calculate one path
             paths = RWA.routing(ev.traf_id, sources, destinations, 50)
-            print('================================================')
             # OSNR Estimation
             selected_path = paths[0][3]
-            flow_id = ev.traf_id
+            # Although inaccurate, the selection of a random wavelength for the
+            # OSNR estimation is irrelevant, due to the fact that the ripple
+            # function applied to it has a flat behaviour.
             chnl = random.randint(1, len(common_avai_chnls)-1)
-            print "Path_computation: chnl"
-            print chnl
             wavelength = common_avai_chnls[chnl]
-            print "Path_computation: wavelength"
-            print wavelength
-            #generate_rules.main(selected_path, wavelength, flow_id)
-            #sleep(0.01)
             estimatedOSNR = self.handle_osnr_estimation(selected_path, wavelength)
-	    if (paths == None):
+        if (paths == None):
                 print('Path_computation: _handle_intra_domain_traffic_pc_request: paths None')
-                print paths
+                print(paths)
                 #Database.Data.traf_list.update_traf_state(traf.traf_id, TRAFFIC_PATH_COMPUTATION_FAIL) 
                 pc_reply_ev = Custom_event.IntraDomainPathCompReplyEvent()
                 pc_reply_ev.traf_id = ev.traf_id
@@ -111,13 +100,12 @@ class Path_computation(app_manager.RyuApp):
                 self.send_event('Intra_domain_connection_ctrl',pc_reply_ev)
                 # delete traffic information
                 Database.Data.traf_list.remove(traf)
-            else:
+        else:
                 result = SUCCESS
-                print('Path_computation: _handle_intra_domain_traffic_pc_request: paths Success')
-                print paths
                 for path in paths:
                     Database.Data.intra_domain_path_list.insert_a_new_path(path)    #record the result of routing
-                    #print path
+                # The channel to be used is assigned in
+                # RWA.rsc_allocation(traf_id, bw_dmd)
                 resources = RWA.rsc_allocation(ev.traf_id, traf.bw_dmd)
                 for path_item in resources:
                     new_path = Database.Data.intra_domain_path_list.find_a_path_by_id(path_item[0])
@@ -148,37 +136,16 @@ class Path_computation(app_manager.RyuApp):
                     Database.Data.traf_list.update_traf_state(ev.traf_id, TRAFFIC_PATH_COMPUTATION_SUCCESS) 
                 else:
                     Database.Data.traf_list.update_traf_state(ev.traf_id, TRAFFIC_PATH_COMPUTATION_FAIL)
-                """for path in paths:  
-                    comm_avai_chnl = path[4]
-                    resources = RWA.rsc_allocation(comm_avai_chnl, traf.bw_demand)
-                    routing_path = Database.Intra_domain_path()
-                    routing_path.traf_id = path[0]
-                    routing_path.route_type = path[1]
-                    routing_path.cost = path[2]
-                    routing_path.route = []
-                    for this_node in path[3]:
-                        new_node = Node_for_route()
-                        new_node.node_ip = this_node[0]
-                        new_node.add_port_id = this_node[1]
-                        new_node.add_port_power = 0
-                        new_node.drop_port_id = this_node[2]
-                        new_node.drop_port_power = 0
-                        routing_path.route.append(new_node)
-                    routing_path.chnl = list(path[4])
-                    if (Database.Data.insert_new_lsp(routing_path, resources) == False):
-                        self.logger.info('Insert unprovisioned lsp error!')
-                        result_tmp = FAIL
-                #Database.Data.traf_list.update_traf_state(traf.traf_id, TRAFFIC_PATH_COMPUTATION_SUCCESS) """
                 pc_reply_ev = Custom_event.IntraDomainPathCompReplyEvent()
                 pc_reply_ev.traf_id = ev.traf_id
                 pc_reply_ev.result = result
                 print('Path_computation: _handle_intra_domain_traffic_pc_request: result')
-                print result
+                print(result)
                 self.send_event('Intra_domain_connection_ctrl',pc_reply_ev)
-        elif (ev.prot_type == TRAFFIC_1PLUS1_PROTECTION):
-            pass
-        else:
-            self.logger.info('Protection type error! Protection type = %d' % ev.prot_type)
+#        elif(ev.prot_type == TRAFFIC_1PLUS1_PROTECTION):
+#            pass
+#        else:
+#            self.logger.info('Protection type error! Protection type = %d' % ev.prot_type)
 
 
     @set_ev_cls(Custom_event.CrossDomainPathCompRequestEvent)
@@ -331,8 +298,6 @@ class Path_computation(app_manager.RyuApp):
                     self.send_event('EastWest_message_send',cross_domain_pc_ev)
                 else:
                     resources = RWA.rsc_allocation(ev.traf_id, traf.bw_dmd)
-                    #print '++++++++++++++++++++++++++++++++++++++'
-                    print resources
                     result = SUCCESS
                     exit_of_previous_domain = list()
                     for path_item in resources:
@@ -342,8 +307,6 @@ class Path_computation(app_manager.RyuApp):
                             result = FAIL
                             break
                         Database.Data.insert_new_lsp(new_path, path_item[1])
-                        print '????????????????????????'
-                        print path_item[1]
                         exit_node_port_tmp = Database.Data.phy_topo.get_exit_of_previous_domain(new_path.route[0].node_ip, new_path.route[0].add_port_id)
                         if exit_node_port_tmp == None:
                             self.logger.critical('Can not find inter-domain link. (Path_computation: _handle_cross_domain_pc_request)')
@@ -370,107 +333,7 @@ class Path_computation(app_manager.RyuApp):
             pass
         else:
             self.logger.info('Protection type error! Protection type = %d' % ev.prot_type)
-        
 
-        '''tmp_time = time.time()
-        # from Yiwen
-        if (traf.prot_type == TRAFFIC_1PLUS1_PROTECTION):
-           pass
-        if ev.route_type == ROUTE_REROUTE:
-        #   update traffic stage to TRAFFIC_REROUTING in database
-            pass
-
-        #path computation in this domain
-
-        if (traf.prot_type == TRAFFIC_NO_PROTECTION or traf.prot_type == TRAFFIC_REROUTING_RESTORATION):
-            self.logger.info ("Inside TRAFFIC_NO_PROTECTION regime")
-
-            # First perform path computation to get 3 paths, and see which wavelengths are available
-            src_node_ip = '192.168.2.1'
-            src_port_id = Database.Data.phy_topo.get_port_id(src_node_ip)
-            dst_node_ip = traf.dst_node_ip
-            dst_node_id = Database.Data.phy_topo.get_node_id_by_ip(dst_node_ip)
-            self.logger.info ("Begin path computation in destination domain from source node {0} to node {1}".format(src_node_ip, dst_node_ip))
-            topo = Database.Data.phy_topo.get_topo()
-            #print("Destination domain topology = ", topo)
-
-            path = self.routing(str(ev.traf_id), topo, 3, src_node_ip, src_port_id, dst_node_ip, traf.bw_dmd)
-            #print (path)
-            if Database.Data.controller_list.this_controller.domain_id != 2:
-                pass
-            else:
-                if (path == []):
-                    self.logger.info ("Path not found")
-                    #Database.Data.traf_list.update_traf_state(ev.traf_id, TRAFFIC_PATH_COMPUTATION_FAIL)
-                    # send reply message to central controller
-                    # delete traffic information
-                else:
-                    self.logger.info ("Path found!\nIntra domain path (destination domain) = {0}".format(', '.join(map(str, path))))
-
-                    # Find the possible wavelengths from source and dest domains
-                    wavelengths_from_src=[]
-                    #for i in range(0, len(ev.entry_of_next_domain)):
-                        #wavelengths_from_src.append(ev.entry_of_next_domain[i][1])
-                    wavelengths_from_dst=path[4]
-                    self.logger.info("Possible wavelengths from source domain: {0}".format(', '.join(map(str, wavelengths_from_src))))
-                    self.logger.info("Possible wavelengths from destination domain: {0}".format(', '.join(map(str, wavelengths_from_dst))))
-
-                    # Choose lowest wavelength common to both domains
-                    common_wavelengths = list(set(wavelengths_from_src) & set(wavelengths_from_dst))
-                    if not common_wavelengths:
-                        self.logger.info("No common wavelengths found!")
-                        #Database.Data.traf_list.update_traf_state(ev.traf_id, TRAFFIC_PATH_COMPUTATION_FAIL)
-                        # send reply to central controller
-                    #lowest_wavelength = common_wavelengths[0]
-                    #index_of_lowest_wavelength = wavelengths_from_dst.index(lowest_wavelength)
-
-                    # Use the lowest wavelength to find the path corresponding to that wavelength
-                    #chosen_path = [path[0], path[1], path[2], path[3][index_of_lowest_wavelength], path[4][0]]
-                    #self.logger.info("Chosen path: {0}".format(', '.join(map(str, chosen_path))))
-                    #Database.Data.intra_domain_path_list.insert_a_new_path(chosen_path)    #record the result of routing
-        # from Yiwen end
-        self.logger.info('Testing! Path computation time = %s' % str(time.time() - tmp_time))'''
-
-        #for temp use only
-        '''if Database.Data.controller_list.is_this_domain(traf.domain_sequence[0]) != True:
-            path = list()
-            resources = None
-            if ev.route_type == ROUTE_WORKING:
-                path.append(ev.traf_id)
-                path.append(ev.route_type)
-                path.append(0)
-                path.append([['192.168.2.1',1,2],['192.168.2.3',1,3]])
-                path.append([15])
-                Database.Data.intra_domain_path_list.insert_a_new_path(path)
-                resources = [15]
-            elif ev.route_type == ROUTE_REROUTE:
-                path.append(ev.traf_id)
-                path.append(ev.route_type)
-                path.append(0)
-                path.append([['192.168.2.1',1,2],['192.168.2.3',1,3]])
-                path.append([30])
-                Database.Data.intra_domain_path_list.insert_a_new_path(path)
-                resources = [30]
-            else:
-                self.logger.info('Wrong route type. (Path_computation: _handle_cross_domain_pc_request)')
-            path = Database.Data.intra_domain_path_list.find_a_path(ev.traf_id, ev.route_type)
-            if path == None:
-                self.logger.critical('Cannot intra-domain path for traffic %d.' % ev.traf_id)
-                return
-            Database.Data.insert_new_lsp(path, resources)
-            Database.Data.intra_domain_path_list.pop_a_path(ev.traf_id, ev.route_type)
-            Database.Data.traf_list.update_traf_state(ev.traf_id, TRAFFIC_PATH_COMPUTATION_SUCCESS) 
-            pc_reply_ev = Custom_event.EastWest_SendPathCompReplyEvent()
-            pc_reply_ev.traf_id = ev.traf_id
-            pc_reply_ev.route_type = ev.route_type
-            pc_reply_ev.result = SUCCESS
-            pc_reply_ev.resource_allocation = list(resources)
-            self.send_event('EastWest_message_send', pc_reply_ev)
-        else:
-            self.logger,info('Error! This domain is the source domain. (Path_computation: _handle_cross_domain_pc_request)')
-        # for temp use only end'''
-        
-                
      
     @set_ev_cls(Custom_event.EastWest_ReceivePathCompReplyEvent)
     def _handle_cross_domain_pc_reply(self,ev):
@@ -517,8 +380,6 @@ class Path_computation(app_manager.RyuApp):
                             result = FAIL
                             break
                         Database.Data.insert_new_lsp(new_path, path_item[1])
-                        print '?????????????????????????????=============='
-                        print path_item[1]
                         exit_node_port_tmp = Database.Data.phy_topo.get_exit_of_previous_domain(new_path.route[0].node_ip, new_path.route[0].add_port_id)
                         if exit_node_port_tmp == None:
                             self.logger.critical('Can not find inter-domain link. (Path_computation: _handle_cross_domain_pc_request)')
@@ -549,8 +410,6 @@ class Path_computation(app_manager.RyuApp):
                             result = FAIL
                             break
                         Database.Data.insert_new_lsp(new_path, ev.exit_of_this_domain[0][3])  
-                        print '?????????????????????????-----------------'
-                        print ev.exit_of_this_domain[0][3]
                     Database.Data.intra_domain_path_list.pop_paths(ev.traf_id)
                     if result == SUCCESS:
                         Database.Data.traf_list.update_traf_state(ev.traf_id, TRAFFIC_PATH_COMPUTATION_SUCCESS) 
@@ -674,53 +533,7 @@ class Path_computation(app_manager.RyuApp):
                     elif traf.traf_type == TRAFFIC_CROSS_DOMAIN:
                         self.send_event('Cross_domain_connection_ctrl', reroute_reply_ev)
                     else:
-                        self.logger.info('Invalid traffic type! (Path_computation: _handle_intra_domain_rerouting_request)')
-
-        '''# from Yiwen
-        if Database.Data.controller_list.is_this_domain(traf.domain_sequence[0]) == True:
-            src_node_ip = traf.src_node_ip
-            src_port_id = Database.Data.phy_topo.get_port_id(src_node_ip)
-            edge_node_ip = Database.Data.phy_topo.get_edge_node_ip()
-            edge_node_id = Database.Data.phy_topo.get_edge_node_id()
-        else:
-            src_node_ip = Database.Data.phy_topo.get_edge_node_ip()
-            src_port_id = Database.Data.phy_topo.get_edge_node_id()
-            edge_node_ip = traf.dst_node_ip
-            edge_node_id = Database.Data.phy_topo.get_port_id(edge_node_ip)
-            self.logger.info ("Begin path computation in source domain from source node {0} to edge node {1}".format(src_node_ip, edge_node_ip))
-            topo = Database.Data.phy_topo.get_topo()
-               
-            nlambda = 3
-            paths = self.routing(str(ev.traf_id), topo, nlambda, src_node_ip, src_port_id, edge_node_ip, traf.bw_dmd)    #routing. calculate one path
-        # from Yiwen end'''
-
-        '''path = list()
-        if Database.Data.controller_list.is_this_domain(traf.domain_sequence[0]) == True:
-            path = []
-        else:
-            path.append(ev.traf_id)
-            path.append(ROUTE_INTRA_REROUTE)
-            path.append(0)
-            path.append([['192.168.2.1',1,3],['192.168.2.2',1,2],['192.168.2.3',2,3]])
-            path.append([15])
-            resources = [15]
-        Database.Data.intra_domain_path_list.insert_a_new_path(path)
-        path = Database.Data.intra_domain_path_list.find_a_path(ev.traf_id, ROUTE_INTRA_REROUTE)
-        Database.Data.insert_new_lsp(path, resources)
-        rerouting_reply_ev = Custom_event.IntraDomainReroutingReply()
-        rerouting_reply_ev.traf_id = ev.traf_id
-        if path != []:
-            rerouting_reply_ev.result = SUCCESS
-        else:
-            rerouting_reply_ev.result = FAIL
-        traf = Database.Data.traf_list.find_traf_by_id(ev.traf_id)
-        if traf.traf_type == TRAFFIC_INTRA_DOMAIN:
-            self.send_event('Intra_domain_connection_ctrl', rerouting_reply_ev)
-        elif traf.traf_type == TRAFFIC_CROSS_DOMAIN:
-            self.send_event('Cross_domain_connection_ctrl', rerouting_reply_ev)
-        else:
-            self.logger.info('Invalid traffic type! (Path_computation: _handle_intra_domain_rerouting_request)')'''
-            
+                        self.logger.info('Invalid traffic type! (Path_computation: _handle_intra_domain_rerouting_request)')            
         
     @set_ev_cls(Custom_event.CrossDomainReroutingRequestEvent)
     def _handle_cross_domain_rerouting_request(self,ev):
@@ -781,65 +594,12 @@ class Path_computation(app_manager.RyuApp):
                 pc_reply_ev.result = FAIL
                 self.send_event('Cross_domain_connection_ctrl', pc_reply_ev)
                 
-            '''# from Yiwen
-            src_node_ip = traf.src_node_ip
-            src_port_id = Database.Data.phy_topo.get_port_id(src_node_ip)
-            edge_node_ip = Database.Data.phy_topo.get_edge_node_ip()
-            edge_node_id = Database.Data.phy_topo.get_edge_node_id()
-            self.logger.info ("Begin path computation in source domain from source node {0} to edge node {1}".format(src_node_ip, edge_node_ip))
-            topo = Database.Data.phy_topo.get_topo()
-           
-            nlambda = 3
-            paths = self.routing(str(ev.traf_id), topo, nlambda, src_node_ip, src_port_id, edge_node_ip, traf.bw_dmd)    #routing. calculate one path
-            # from Yiwen end'''
-
-        '''Database.Data.traf_list.update_traf_stage(ev.traf_id, TRAFFIC_REROUTING)
-        path = list()
-        path.append(ev.traf_id)
-        path.append(ROUTE_REROUTE)
-        path.append(0)
-        path.append([['192.168.1.1',1,2],['192.168.1.2',1,2],['192.168.1.3',1,2]])
-        path.append([30])
-        Database.Data.intra_domain_path_list.insert_a_new_path(path)
-        if path != []:
-            Database.Data.traf_list.update_traf_state(ev.traf_id, TRAFFIC_PATH_COMPUTATION)
-            #entry_of_next_domain = Database.Data.find_entry_of_next_domain(ev.traf_id)  # find entry of next domain
-            entry_of_next_domain = []
-            pc_req_ev = Custom_event.EastWest_SendPathCompRequestEvent()
-            pc_req_ev.traf_id = ev.traf_id
-            pc_req_ev.route_type = ROUTE_REROUTE
-            pc_req_ev.entry_of_next_domain = entry_of_next_domain
-            self.send_event('EastWest_message_send',pc_req_ev)
-            #setup a timer for cross-domain path computation. Moved to EastWest_message_send 
-            #new_timer = Timer()
-            #new_timer.traf_id = ev.traf_id
-            #new_timer.timer_type = TIMER_PATH_COMPUTATION
-            #new_timer.end_time = time.time() + EASTWEST_WAITING_TIME
-            #eastwest_timer.append(new_timer)
-        else:
-            Database.Data.traf_list.update_traf_state(ev.traf_id, TRAFFIC_PATH_COMPUTATION_FAIL)
-            rerouing_replt_ev = Custom_event.CrossDomainReroutingReplyEvent()
-            rerouing_replt_ev.traf_id = ev.traf_id
-            rerouing_replt_ev.result = FAIL
-            self.send_event('Cross_domain_connection_ctrl', rerouing_replt_ev)'''
-            
-    
-        
-        
-    #def routing(self, source_node_id, src_port_id, destination_node_id, bw_demand):
-        """input: src_node_id, src_port_id, dst_node_id, bw_demand
-           output: (traf_id, route_type, cost, route(a tuple of (node_ip, add_port_id, drop_port_id)), common_avai_chnl). if fail, return None
-        """
-        #pass
-
     #from Yiwen   modified by Yao 2017-05-03
     def routing_yiwen(self, traf_id, topo, nlambda, src_node_ip, src_port_id, edge_node_ip, bw_demand):
         """input: src_node_id, src_port_id, dst_node_id, bw_demand
            output: [traf_id, route_type, cost, route(a list of node_id), common_avai_chnl]. if fail, return []
         """
-        #self.logger.info (traf_id, topo, nlambda, src_node_ip, edge_node_ip)
         computed_path = path_wav_compute(traf_id, topo, nlambda, src_node_ip, edge_node_ip)
-        #print (computed_path)
 
         routes=[]
         wavelengths=[]
@@ -847,30 +607,15 @@ class Path_computation(app_manager.RyuApp):
             routes.append(computed_path[i][0])
             wavelengths.append(computed_path[i][1])
 
-        # translate ips to ids in computed path
-        #for i in range(0, len(computed_path[0])):
-        #    route.append(Database.Data.phy_topo.get_node_id_by_ip(computed_path[0][i]))
-        
-
         return [traf_id, ROUTE_WORKING, 0, routes, wavelengths]
     #from Yiwen end
         
-
-    #def rsc_allocation(self, comm_avai_chnl, bw_demand):
-        """input: comm_avai_chnl(a list), bw_demand
-           output: resources (a list)
-        """
-        #pass
-        #return a_list
-    
     def handle_osnr_estimation(self, selected_path, wavelength):
         self.flow_id = self.flow_id + 1
         flows_osnr = {}
         flows_osnr[self.flow_id] = []
         power = self.dB_to_abs(-2)
         noise = 1e-10
-        print('handle_osnr_estimation: ')
-        print(selected_path)
         LEN_PATH = len(selected_path)
         NODE_FLAG = 1
         self.abs_fiber_loss = self.dB_to_abs(1e-10)
@@ -903,7 +648,6 @@ class Path_computation(app_manager.RyuApp):
         sim_vs_est_osnr = flows_osnr[self.flow_id]
         f = open(root_path_controller+"log/rwa_osnr.log","a+")
         f.write(str(sim_vs_est_osnr) + "\n")
-        print sim_vs_est_osnr
         f.close()
         
         return sim_vs_est_osnr[-1]
@@ -917,41 +661,38 @@ class Path_computation(app_manager.RyuApp):
         # Beware the hex format of the parameters
         #n_lambda = int(_lambda, 16)
         if(self.is_last_node_in_path(node_id, selected_path)):
-            print('estimate_output_power_noise: computing last node')
             self.abs_WSS_loss = self.dB_to_abs(9)
             output_power = input_power / self.abs_WSS_loss
             output_noise = input_noise / self.abs_WSS_loss
-            print('output_power: ', str(output_power))
-            print('output_noise: ', str(output_noise))
             return output_power, output_noise
 
         try:
             dst_node = self.get_next_node(node_id, selected_path)
-            print('dst_node: %s', str(dst_node))
+#            print('dst_node: %s', str(dst_node))
             EDFA_NO = self.get_EDFA_NO(node_id, dst_node)
-            print('EDFA_NO: %s', str(EDFA_NO))
+#            print('EDFA_NO: %s', str(EDFA_NO))
             link_distance = self.get_link_distance(node_id, dst_node)
-            print('link_distance: %s', str(link_distance))
+#            print('link_distance: %s', str(link_distance))
 
             RIPPLE = 1
             if EDFA_NO == 1:
                 TARGET_GAIN = self.dB_to_abs(20)
                 EDFA_OUT_POWER = TARGET_GAIN * input_power * RIPPLE
-                print('EDFA_OUT_POWER: ', str(EDFA_OUT_POWER))
+#                print('EDFA_OUT_POWER: ', str(EDFA_OUT_POWER))
                 EDFA_NOISE = self.calculate_out_noise(input_noise, wavelength, TARGET_GAIN*RIPPLE)
-                print('EDFA 1, SHORT LINK, DISTANCE: %s', str(link_distance))
+#                print('EDFA 1, SHORT LINK, DISTANCE: %s', str(link_distance))
                 self.abs_fiber_loss = self.dB_to_abs(0.2*link_distance)
                 sleep(0.01)
                 output_power = EDFA_OUT_POWER #/ self.abs_fiber_loss
                 output_noise = EDFA_NOISE #/ self.abs_fiber_loss
-                print('output_power: ', str(output_power))
-                print('output_noise: ', str(output_noise))
+#                print('output_power: ', str(output_power))
+#                print('output_noise: ', str(output_noise))
                 return output_power, output_noise
 
             self.update_fiber_loss(int(100)) # set standard span length
             sleep(0.01)
             for EDFA in range(int(EDFA_NO)):
-                print('EDFA: ', str(EDFA))
+#                print('EDFA: ', str(EDFA))
                 if EDFA == 0:
                     TARGET_GAIN = self.dB_to_abs(20)
                 elif EDFA == EDFA_NO-1:
@@ -960,7 +701,7 @@ class Path_computation(app_manager.RyuApp):
                     TARGET_GAIN = self.dB_to_abs(20)
 
                 EDFA_OUT_POWER = TARGET_GAIN * input_power * RIPPLE
-                print('EDFA_OUT_POWER: ', str(EDFA_OUT_POWER))
+#                print('EDFA_OUT_POWER: ', str(EDFA_OUT_POWER))
                 EDFA_NOISE = self.calculate_out_noise(input_noise, wavelength, TARGET_GAIN*RIPPLE)
 
                 if EDFA == EDFA_NO-2:
@@ -973,8 +714,8 @@ class Path_computation(app_manager.RyuApp):
                     
             output_power = EDFA_OUT_POWER
             output_noise = EDFA_NOISE
-            print('output_power: ', str(output_power))
-            print('output_noise: ', str(output_noise))
+#            print('output_power: ', str(output_power))
+#            print('output_noise: ', str(output_noise))
             return output_power, output_noise
         except:
             print('Err: estimate_output_power_noise. Unable to compute output power and noise.')
@@ -994,12 +735,12 @@ class Path_computation(app_manager.RyuApp):
         try:
             planck_const = sc.h # 6.62607004e-34
             speed_of_light = sc.speed_of_light # 299792460.0
-	    c_band_lambda = (1530+n_lambda*0.4)*10e-9
+            c_band_lambda = (1530+n_lambda*0.4)*10e-9
             noise_figure = self.dB_to_abs(6) 
             bandwidth = 12.5*(10e9) # Considering 50GHz bandwidth
             watt_to_mwatt = 1000
             out_noise = ((input_noise * sys_gain) + ((planck_const*(speed_of_light/c_band_lambda)) * sys_gain * watt_to_mwatt * noise_figure * bandwidth)) # 
-            print('calculate_out_noise: out_noise: %s', str(out_noise))
+#            print('calculate_out_noise: out_noise: %s', str(out_noise))
             return out_noise
         except:
             print('Err: calculate_out_noise. Unable to compute output noise.')
@@ -1017,15 +758,14 @@ class Path_computation(app_manager.RyuApp):
         return absolute_value
 
     def get_link_distance(self, src_node, dst_node):
-        print('Entering get_link_distance')
-        print('src_node: %s', str(src_node))
-        print('dst_node: %s', str(dst_node))
+#        print('Entering get_link_distance')
+#        print('src_node: %s', str(src_node))
+#        print('dst_node: %s', str(dst_node))
         try:
             for link_id in self.link_distance_mapping:
                 link = self.link_distance_mapping[link_id]
                 if(link[0] == src_node) and (link[1] == dst_node):
                     distance = link[2]
-                    EDFA_NO = link[3]
                     return distance
         except:
             print('Err: get_link_distance. Unable to compute link distance.')
@@ -1070,7 +810,6 @@ class Path_computation(app_manager.RyuApp):
         try:
             TARGET_POWER = self.dB_to_abs(-2)
             target_gain = TARGET_POWER / input_power
-            print('target_gain:', str(target_gain))
             return target_gain
         except:
             print('Err: compute_gain_last_span. Unable to compute gain at last amplifier.')
@@ -1088,7 +827,6 @@ class Path_computation(app_manager.RyuApp):
 
     def update_fiber_loss(self, span):
         try:
-            print('span: ', str(span))
             self.abs_fiber_loss = self.dB_to_abs(0.2*span)
         except:
             print('Err: update_fiber_loss. Unable to update out_fiber_loss')

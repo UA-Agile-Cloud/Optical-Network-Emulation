@@ -14,7 +14,6 @@ Last modified by Yao: 2017/05/19
 
 from Common import *
 import random
-import rwa
 import Database
 
 
@@ -53,10 +52,12 @@ def routing(traf_id, sources, destinations, bw_demand):
     """
     paths = []
     topo = Database.Data.phy_topo.get_topo()
+    print("Routing and wavelength assignment: TOPO")
+    print(topo)
     route_ = []
     shortest = find_shortest_path(topo, sources[0][0], destinations[0][0])
     print('RWA_shortestpath_random: routing: shortest_path:')
-    print shortest
+    print(shortest)
     if shortest == [] :
         return None
     traf_id_ = traf_id
@@ -86,14 +87,12 @@ def routing(traf_id, sources, destinations, bw_demand):
         if i < (len(shortest)-1): 
             common_avai_chnls_ = list(set(common_avai_chnls_) & set(get_common_avi_chnls(shortest[i], shortest[i+1])))
 
-    #print [traf_id_, route_type_, cost_, route_, common_avai_chnls_]
     if common_avai_chnls_ == []:
         return None
     if len(common_avai_chnls_) < (bw_demand/50):
         return None
     else:
         paths.append([traf_id_, route_type_, cost_, route_, common_avai_chnls_])
-        print('RWA_shortestpath_random: routing: Returning paths')
         return paths
     
 
@@ -172,7 +171,6 @@ def rsc_allocation(traf_id, bw_demand):
         res_bw_.remove(random.choice(res_bw_))
     if (list(res_bw_) != []) and len(res_bw_) == bw_demand/50:
         res_allc_.append([path_id_, res_bw_])
-        print res_allc_
         return res_allc_
     else:
         return None
@@ -198,7 +196,7 @@ def find_entry_of_next_domain(traf_id):
        input: traf_id
        output: a list of [node_ip, node_port_id, route_type, cost, [common_avai_chnls]]. If not found, return None
     """
-    print Database.Data.intra_domain_path_list.intra_domain_path_list[0].traf_id
+    print(Database.Data.intra_domain_path_list.intra_domain_path_list[0].traf_id)
     for i in range(0, len(Database.Data.intra_domain_path_list.intra_domain_path_list)):
         if Database.Data.intra_domain_path_list.intra_domain_path_list[i].traf_id == traf_id:
 
@@ -244,5 +242,3 @@ def find_intra_domain_paths(exit_of_this_domain):
                 if intra_domain_path !=[]:
                     return intra_domain_path
     return None
-    
-

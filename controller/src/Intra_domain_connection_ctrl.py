@@ -9,7 +9,6 @@ Last modified by Yao: 2017/05/101
 
 """
 
-import sys
 from ryu.base import app_manager
 from ryu.controller.handler import set_ev_cls
 from ryu.lib import hub
@@ -20,7 +19,7 @@ import Custom_event
 import logging
 from Common import log_level
 import remote_mininet_client
-from time import sleep
+#from time import sleep
 
 logging.basicConfig(level = log_level)
 
@@ -45,7 +44,6 @@ class Intra_domain_connection_ctrl(app_manager.RyuApp):
                 
     def __init__(self,*args,**kwargs):
         super(Intra_domain_connection_ctrl, self).__init__(*args,**kwargs)
-        #self.virtual_port_mapping = virtual_port_mapping.main()
                     
     @set_ev_cls(Custom_event.North_IntraDomainTrafficRequestEvent)
     def _handle_intra_domain_traffic_request(self,ev):
@@ -93,7 +91,6 @@ class Intra_domain_connection_ctrl(app_manager.RyuApp):
     def _handle_lsp_setup_request(self,ev):
         """Intra-domain lightpath setup 
         """
-        #pass
         #update Phy_topo
         #for all the unprovisioned lsps with lsp.traf_id == ev.traf_id
         #   send OFPT_SETUP_CONFIG_WSS_REQUEST message
@@ -112,23 +109,13 @@ class Intra_domain_connection_ctrl(app_manager.RyuApp):
         Database.Data.south_timer.append(new_timer)
         for new_lsp in Database.Data.lsp_list.lsp_list:
             if (new_lsp.traf_id == ev.traf_id) and (new_lsp.lsp_state == LSP_UNPROVISIONED):
-                # print '=======unprovisioned_lsp======='
-                # print new_lsp.traf_id
-                # print new_lsp.lsp_state
-                # print '=======unprovisioned_lsp======='
                 new_msgs = Database.LSP_msg_list()
                 new_msgs.lsp_id = new_lsp.lsp_id
                 new_msgs.route_type = new_lsp.route_type
                 new_timer.lsp_msg_list.append(new_msgs)
                 for key,new_node in enumerate(new_lsp.explicit_route.route):
                     Database.Data.message_id += 1 
-                    #new_msgs.msgs.append(Database.Data.message_id)
                     new_msgs.msgs[key] = Database.Data.message_id
-                    # print '================new_msgs.msgs[key]======================'
-                    # print key
-                    # print len(new_lsp.explicit_route.route)
-                    # print '================new_msgs.msgs[key]======================'
-                self.logger.debug(str(new_msgs.msgs))
                 if Database.Data.south_setup_time == 0:   
                     Database.Data.south_setup_time = time.time()
                 else:
@@ -141,16 +128,9 @@ class Intra_domain_connection_ctrl(app_manager.RyuApp):
                         scr_node_id = Database.Data.phy_topo.get_node_id_by_ip(scr_node)
                         dest_node = traf.dst_node_ip
                         dest_node_id = Database.Data.phy_topo.get_node_id_by_ip(dest_node)
-                #for new_lsp in Database.Data.lsp_list.lsp_list:
-                #    if (new_lsp.traf_id == ev.traf_id) and (new_lsp.lsp_state == LSP_UNPROVISIONED):
-                        # print '=======unprovisioned_lsp_SouthSetup1======='
-                        # print new_lsp.traf_id
-                        # print new_lsp.lsp_state
-                        # print '=======unprovisioned_lsp_SouthSetup1======='
                 FLAG_ALT = 1
                 for key,new_node in enumerate(new_lsp.explicit_route.route):
-                    dpid = DPID
-                    print(Database.Data.ip2datapath)
+                    dpid = Database.Data.phy_topo.get_node_id_by_ip(new_node.node_ip)
                     datapath = Database.Data.ip2datapath[new_node.node_ip]
                     msg_id = new_msgs.msgs[key]
                     mod1 = datapath.ofproto_parser.OFPTSetupConfigWSSRequest(
@@ -161,125 +141,43 @@ class Intra_domain_connection_ctrl(app_manager.RyuApp):
                                             node_id= Database.Data.phy_topo.get_node_id_by_ip(new_node.node_ip),
                                             input_port_id = new_node.add_port_id,
                                             output_port_id = new_node.drop_port_id,
-					    start_channel=new_lsp.occ_chnl[0],
+                                            start_channel=new_lsp.occ_chnl[0],
                                             end_channel= new_lsp.occ_chnl[-1],
                                             experiment1= new_lsp.traf_id,
                                             experiment2=0)
                     datapath.send_msg(mod1)
-                    self.logger.info('a WSS setup Request is sent by RYU') 
-                    self.logger.debug('msg_id = %d' % msg_id)
-                    self.logger.debug('node_id = %d' % Database.Data.phy_topo.get_node_id_by_ip(new_node.node_ip))
-                    self.logger.debug ('input_port_id = %d' % new_node.add_port_id)
-                    self.logger.debug('output_port_id = %d' % new_node.drop_port_id)
-                    self.logger.debug('start_channel = %d' % new_lsp.occ_chnl[0])
-                    self.logger.debug('end_channel = %d' % new_lsp.occ_chnl[-1])
-                    self.logger.debug('experiment1 = %d' % int(new_lsp.traf_id))
                     hub.sleep(0.05)
                     FLAG_ALT = FLAG_ALT + 1
-                    #new_msgs.msgs.append(Database.Data.message_id)
-                # if (FLAG_ALT == len(new_msgs.msgs)):
-                #     new_timer.lsp_msg_list.remove(new_msgs)
-                #     Database.Data.south_timer.remove(new_timer)
-                # print('new_time.lsp_msg_list')
-                # print(new_timer.lsp_msg_list)
-		remote_mininet_client.main(new_lsp.traf_id, scr_node_id, dest_node_id, hex(new_lsp.occ_chnl[0]))
-                    #new_timer.lsp_msg_list.append(new_msgs)
-                # print '!!!!!!!!!!!!!!!!!!!!!!'
-                # print new_lsp.traf_id
-                # print scr_node_id
-                # print dest_node_id
-                # print new_lsp.occ_chnl[0]
-                # print '!!!!!!!!!!!!!!!!!!!!!!'
-        #     for new_lsp in Database.Data.lsp_list.lsp_list:
-        #         if (new_lsp.traf_id == ev.traf_id) and (new_lsp.lsp_state == LSP_UNPROVISIONED):
-        #             print '=======unprovisioned_lsp_SouthSetup2======='
-        #             print new_lsp.traf_id
-        #             print new_lsp.lsp_state
-        #             print '=======unprovisioned_lsp_SouthSetup2======='
-        #     #remote_mininet_client.main(new_lsp.traf_id, scr_node_id, dest_node_id, new_lsp.occ_chnl[0])
-        #         #new_timer.lsp_msg_list.append(new_msgs)
-
-        #     if (not new_msgs.msgs) and (new_msgs in new_timer.lsp_msg_list):
-        #         new_timer.lsp_msg_list.remove(new_msgs)
-        # if (new_timer.lsp_msg_list == []) and (new_timer in Database.Data.south_timer):
-        #     Database.Data.south_timer.remove(new_timer)
-        #     self.logger.info('No unprovisioned LSPs are found! (Intra_domain_connection_ctrl: _handle_lsp_setup_request)')
-
-
-        '''# for testing
-        ev_lsp_setup_reply = Custom_event.South_LSPSetupReplyEvent()
-        ev_lsp_setup_reply.traf_id = ev.traf_id
-        ev_lsp_setup_reply.result = SUCCESS
-        self.send_event('Intra_domain_connection_ctrl',ev_lsp_setup_reply)
-        Database.Data.south_timer.remove(new_timer)
-        #for testing end'''
-                                                                                              
+        remote_mininet_client.main(new_lsp.traf_id, scr_node_id, dest_node_id, hex(new_lsp.occ_chnl[0]))
         
     @set_ev_cls(Custom_event.South_LSPSetupReplyEvent)
     def _handle_lsp_setup_reply(self,ev):
-        #pass
-        #lsp is working or protection:
-        #if SUCCESS:
-        #   update traffic state to TRAFFIC_SETUP_SUCCESS
-        #   update lsp state to LSP_SETUP_SUCCESS
-        #   send Custom event.South_OSNRMonitoringRequest to 'Monitoring'
-        #elif FAIL or TIMEOUT:
-        #   update traffic state to TRAFFIC_SETUP_FAIL
-        #   update lsp state to LSP_SETUP_FAIL
-        #   send Custom_event.South_LSPTeardownRequestEvent to 'Intra_domain_connection_ctrl'
-        #send Custom_event.North_TrafficReplyEvent to 'North_bound_message_send'
-        #lsp is rerouting:
-        #if SUCCESS:
-        #   update traffic state to TRAFFIC_INTRA_DOMAIN_REROUTE_SUCCESS
-        #   update lsp state to LSP_SETUP_SUCCESS
-        #   send Custom_event.South_OSNRMonitoringRequest to 'Monitoring'
-        #   tear down old lsp
-        #elif FAIL or TIMEOUT:
-        #   update traffic state to TRAFFIC_INTRA_DOMAIN_REROUTE_FAIL
-        #   update lsp state to LSP_SETUP_FAIL
-        #   send Custom_event.South_LSPTeardownRequestEvent to 'Intra_domain_connection_ctrl'
-        #send Custom_event.North_TrafficStateUpdateEvent to 'North_bound_message_send'
         this_traf = Database.Data.traf_list.find_traf_by_id(ev.traf_id)
-        print '==========reply_traf_id==========='
-        print this_traf.traf_id
-        print '==========reply_traf_id==========='
         if this_traf == None:
             self.logger.info('Cannot find traffic %d. (Intra_domain_connection_ctrl: _handle_lsp_setup_reply)' % ev.traf_id)
             return
         for lsp in Database.Data.lsp_list.lsp_list:
             if (lsp.traf_id == ev.traf_id) and (lsp.lsp_state == LSP_UNPROVISIONED):
-                print '==========lsp_traf_id==========='
-                print lsp.traf_id
-                print lsp.lsp_id
-                print lsp.lsp_state
-                print '==========rlsp_traf_id==========='
-        unpro_lsp = Database.Data.lsp_list.get_unprovisioned_lsps(ev.traf_id)
+                unpro_lsp = Database.Data.lsp_list.get_unprovisioned_lsps(ev.traf_id)
         if unpro_lsp == None:
             self.logger.info('Cannot find traffic %d\'s unprovisioned lsps. (Intra_domain_connection_ctrl: _handle_lsp_setup_reply)' % ev.traf_id)
             return
         if this_traf.traf_stage == TRAFFIC_WORKING:
             if ev.result == SUCCESS:
-                print('ENTERING SUCCESS')
                 Database.Data.traf_list.update_traf_state(ev.traf_id, TRAFFIC_SETUP_SUCCESS)
-                print '=============woring_traf_setup_state================' 
-                print ev.result
-                print '=============working_traf_setup_state================' 
                 for lsp_id in range(len(unpro_lsp)):
                     Database.Data.lsp_list.update_lsp_state(ev.traf_id, lsp_id, LSP_SETUP_SUCCESS)
-                    print('LSP_SETUP_SUCCESS')
-                sleep(16)
-		        #sleep(6)
-                osnr_monitor_req_ev = Custom_event.South_OSNRMonitoringRequestEvent()
-                osnr_monitor_req_ev.traf_id = ev.traf_id
-                osnr_monitor_req_ev.route_type = ROUTE_WORKING
-                self.send_event('Monitoring',osnr_monitor_req_ev)
+#                sleep(16)
+#                osnr_monitor_req_ev = Custom_event.South_OSNRMonitoringRequestEvent()
+#                osnr_monitor_req_ev.traf_id = ev.traf_id
+#                osnr_monitor_req_ev.route_type = ROUTE_WORKING
+#                self.send_event('Monitoring',osnr_monitor_req_ev)
             elif ev.result == FAIL or ev.result == TIMEOUT_TRAF_SETUP:
                 Database.Data.traf_list.update_traf_state(ev.traf_id, TRAFFIC_SETUP_FAIL)
                 for lsp_id in range(len(unpro_lsp)):
                     Database.Data.lsp_list.update_lsp_state(ev.traf_id, lsp_id, LSP_SETUP_FAIL) 
                 lsp_teardown_req_ev = Custom_event.South_LSPTeardownRequestEvent()
                 lsp_teardown_req_ev.traf_id = this_traf.traf_id
-                #return
                 self.send_event('Intra_domain_connection_ctrl',lsp_teardown_req_ev)
             else:
                 self.logger.info('Invalid lsp setup result! (Intra_domain_connection_ctrl: _handle_lsp_setup_reply)')
@@ -327,33 +225,7 @@ class Intra_domain_connection_ctrl(app_manager.RyuApp):
     @set_ev_cls(Custom_event.South_OSNRMonitoringReplyEvent)
     def _handle_OSNR_monitoring_reply(self,ev):
         pass
-        #if result is not SUCCESS:
-        #   error
-        #else:
-        #   if is_OSNR_all_good == True
-        #       return
-        #   traffic on working path:
-        #   if impairment at this domain
-        #       if traffic protection type is TRAFFIC_REROUTING_RESTORATION:
-        #           update traf_state to TRAFFIC_INTRA_DOMAIN_REROUTE
-        #           update traff_stage to TRAFFIC_REROUTING
-        #           send Custom_event.IntraDomainReroutingRequest to Path_computation
-        #       elif traffic protection type is TRAFFIC_1PLUS1_PROTECTION
-        #           switch to backup path
-        #           update traf_state to TRAFFIC_ON_BACKUP_PATH:
-        #           send Custom_event.North_TrafficStateUpdateEvent to 'North_bound_message_send'
-        #           trigger backup path OSNR monitering
-        #       elif traffic protection type is TRAFFIC_NO_PROTECTION:
-        #           update traffic state to TRAFFIC_INACTIVE
-        #           send Custom_event.North_TrafficStateUpdateEvent to 'North_bound_message_send'
-        #   else: 
-        #       update traffic state to TRAFFIC_INACTIVE
-        #       send Custom_event.North_TrafficStateUpdateEvent to 'North_bound_message_send'
-        #   traffic on rerouting path:
-        #       update traffic state to TRAFFIC_INACTIVE
-        #       send Custom_event.North_TrafficStateUpdateEvent to 'North_bound_message_send'
-        #   traffic on backup path:
-        #       pass
+        # Ignore this for the moment - April 24, 2018 - Alan
         this_traf = Database.Data.traf_list.find_traf_by_id(ev.traf_id)
         if this_traf == None:
             self.logger.critcal('Cannot find traffic %d. (Intra_domain_connection_ctrl: _handle_lsp_teardown_reply)' % ev.traf_id)
@@ -467,13 +339,13 @@ class Intra_domain_connection_ctrl(app_manager.RyuApp):
         # print len(Database.Data.lsp_list.lsp_list)
         # print Database.Data.lsp_list.lsp_list[0].traf_id
         # print '=========teardown_LSP_list_len================='
-	for this_lsp in Database.Data.lsp_list.lsp_list:
+        for this_lsp in Database.Data.lsp_list.lsp_list:
 	    # print '---------lsp_loop!!!!------------'
 	    # print this_lsp.traf_id
-	    if (this_lsp.traf_id == this_lsp.traf_id):
-		this_msgs = Database.LSP_msg_list()
-                print('this_msgs')
-                print(this_msgs)
+            if (this_lsp.traf_id == this_lsp.traf_id):
+                this_msgs = Database.LSP_msg_list()
+#                print('this_msgs')
+#                print(this_msgs)
 		#print '----------get_this_msgs_teardown------------'
                 this_msgs.lsp_id = this_lsp.lsp_id
                 this_msgs.route_type = this_lsp.route_type
@@ -501,11 +373,11 @@ class Intra_domain_connection_ctrl(app_manager.RyuApp):
                 FLAG_ALT = 1
                 for key,this_node in enumerate(this_lsp.explicit_route.route):
                     print('Entering to generation OFP_TEARDOWN')
-                    dpid = DPID
+                    dpid = Database.Data.phy_topo.get_node_id_by_ip(new_node.node_ip)
                     datapath = Database.Data.ip2datapath[this_node.node_ip]
                     msg_id = this_msgs.msgs[key]
                     mod = datapath.ofproto_parser.OFPTTeardownConfigWSSRequest(datapath,
-                                                                            datapath_id=Database.Data.phy_topo.get_node_id_by_ip(this_node.node_ip),
+                                                                            datapath_id=dpid,
                                                                             message_id= msg_id,
                                                                             ITU_standards= ITU_C_50, 
                                                                             node_id= Database.Data.phy_topo.get_node_id_by_ip(this_node.node_ip),
@@ -527,8 +399,8 @@ class Intra_domain_connection_ctrl(app_manager.RyuApp):
                 # if (FLAG_ALT == len(this_msgs.msgs)):
                 #     new_timer.lsp_msg_list.remove(this_msgs)
                 #     Database.Data.south_timer.remove(new_timer)
-                print('new_time.lsp_msg_list')
-                print(new_timer.lsp_msg_list)
+#                print('new_time.lsp_msg_list')
+#                print(new_timer.lsp_msg_list)
                 # if (new_timer.lsp_msg_list.msgs == {}):
                 # #if (new_timer.lsp_msg_list == []) and (new_timer in Database.Data.south_timer):
                 #     Database.Data.south_timer.remove(new_timer)
@@ -642,7 +514,6 @@ class Intra_domain_connection_ctrl(app_manager.RyuApp):
             for key,new_node in enumerate(this_lsp.explicit_route.route):
                 Database.Data.message_id += 1 
                 #new_msgs.msgs.append(Database.Data.message_id)
-                print new_msgs
                 new_msgs.msgs[key] = Database.Data.message_id
             self.logger.debug(str(new_msgs.msgs))
             if Database.Data.south_teardown_path_time == 0:   

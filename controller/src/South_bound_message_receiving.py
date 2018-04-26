@@ -137,13 +137,10 @@ class South_bound_message_receive(app_manager.RyuApp):
         try:
             datapath=Database.Data.dpid2datapath[datapath_id]
         except:
-            self.logger.critical('Bad things occur......Datapath not found...')
-	#for testing
-	self.logger.info('received msg_id = %d' % message_id)
-	#self.logger.debug(Database.Data.south_timer[0].lsp_msg_list[0])
-	#self.logger.debug(Database.Data.south_timer[0].lsp_msg_list[0].msgs[0])
-	#for testing end 
-        self.logger.info('RYU get a WSS_SETUP_CONFIG_REPLY from agent %s' % datapath.id)
+            self.logger.critical('South_bound_message_receiving: _handle_setup_reply: Datapath not found!')
+            for element in Database.Data.dpid2datapath:
+                self.logger.info("dpid2datapath: %s " %element)
+        self.logger.info('South_bound_message_receiving: _handle_setup_reply: RYU get a WSS_SETUP_CONFIG_REPLY from agent %s' % datapath.id)
         if (Database.Data.msg_in_south_timer(message_id) == False) and (Database.Data.msg_in_south_timer_no_response(message_id) == False):
             self.logger.warning('Cannot find this reply message in timer! (South_bound_message_receive: _handle_setup_reply)')
             return
@@ -154,10 +151,10 @@ class South_bound_message_receive(app_manager.RyuApp):
                     if tmp_timer.timer_type == TIMER_TRAFFIC_SETUP:
                         for tmp_lsp_msg_list in tmp_timer.lsp_msg_list:
                             for key,msg_id in tmp_lsp_msg_list.msgs.items():
-				if msg_id == message_id:
-                               	    self.logger.info('South_bound_message_receive module receives a success setup reply. msg_id = %d' % message_id)
+                                if msg_id == message_id:
+#                               	    self.logger.info('South_bound_message_receive module receives a success setup reply. msg_id = %d' % message_id)
                                     flag_find_msg = True
-				    del tmp_lsp_msg_list.msgs[key]
+                                    del tmp_lsp_msg_list.msgs[key]
                                     #tmp_lsp_msg_list.msgs = filter(lambda msg: msg != message_id, tmp_lsp_msg_list.msgs)
                                     if not tmp_lsp_msg_list.msgs:
                                         #Database.Data.lsp_list.update_lsp_state(tmp_timer.traf_id, tmp_lsp_msg_list.lsp_id, LSP_SETUP_SUCCESS)
@@ -175,32 +172,14 @@ class South_bound_message_receive(app_manager.RyuApp):
                             else:
                                 self.logger.info('Invalid traffic type! (South_bound_message_receive: _handle_setup_reply)')
                             Database.Data.south_timer.remove(tmp_timer)
-			    #for recording excusion time
-			    # this_traf = Database.Data.traf_list.find_traf_by_id(tmp_timer.traf_id)
-			    # if this_traf == None:
-			    #     self.logger.critcal('Cannot find traffic %d. (Cross_domain_connection_ctrl: _handle_lsp_setup_reply)' % ev.traf_id)
-			    #     return
-			    # with open('record_time.txt', 'a') as f:
-			    #     f.write('South setup time: (route_type = ')
-			    #     if this_traf.traf_state == TRAFFIC_INTRA_DOMAIN_REROUTE_SUCCESS:
-				   #  f.write(str(ROUTE_INTRA_REROUTE)+')\n')
-			    #     elif this_traf.traf_stage == TRAFFIC_REROUTING:
-				   #  f.write(str(ROUTE_REROUTE)+')\n')
-			    #     else:
-				   #  f.write(str(ROUTE_WORKING)+')\n')
-			    #     f.write(str(time.time() - Database.Data.south_setup_time)+'\n')
-			    # Database.Data.south_setup_time = 0
-			    # #for recording excusion time end
-       #                      break
-       #                  if flag_find_msg == True:
-			    # break
+
             elif result == FAIL:
                 flag_find_msg = False
                 for tmp_timer in Database.Data.south_timer:
                     if tmp_timer.timer_type == TIMER_TRAFFIC_SETUP:
                         for tmp_lsp_msg_list in tmp_timer.lsp_msg_list:
                             if message_id in tmp_lsp_msg_list.msgs:
-                                self.logger.debug('South_bound_message_receive module receives a fail setup reply. msg_id = %d' % message_id)
+#                                self.logger.debug('South_bound_message_receive module receives a fail setup reply. msg_id = %d' % message_id)
                                 flag_find_msg = True
                                 Database.Data.lsp_list.update_lsp_state(tmp_timer.traf_id, tmp_lsp_msg_list.lsp_id, LSP_SETUP_FAIL)
                                 ev_lsp_setup_reply = Custom_event.South_LSPSetupReplyEvent()
@@ -231,7 +210,7 @@ class South_bound_message_receive(app_manager.RyuApp):
         try:
             datapath=Database.Data.dpid2datapath[int(datapath_id)]
         except:
-            print 'Bad things occur......Datapath not found...'
+            print('Bad things occur......Datapath not found...')
         self.logger.info('RYU get WSS_TEARDOWN_CONFIG_REPLY from agent %s' % datapath_id)
         
         if (Database.Data.msg_in_south_timer(message_id) == False) and (Database.Data.msg_in_south_timer_no_response(message_id) == False):

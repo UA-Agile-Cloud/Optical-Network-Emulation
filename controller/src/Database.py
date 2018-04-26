@@ -10,7 +10,6 @@ Last modified by Yao: 2017/05/16
 """
 
 from Common import *
-import random
 
 # Physical layer information
 
@@ -232,7 +231,7 @@ class LSP_list:
                     lsp.drop_port_OSNR = OSNR
                     return True
                 else:
-                    print 'Cannot find node %s' % node_ip
+                    print('Cannot find node %s' % node_ip)
                     return False
         return False
 
@@ -251,7 +250,7 @@ class LSP_list:
         elif len(lsp_list) == 2:
             return (lsp_list[0], lsp_list[1])
         else:
-            print 'Invalid number of unprovisioned LSPs.'
+            print('Invalid number of unprovisioned LSPs.')
             return None
     
 # Lightpath information ends
@@ -294,7 +293,7 @@ class Traffic_list:
            output: a bool indicates result
         """
         if self.find_traf_by_id(ev.traf_id) != None:
-            print 'Traffic %d already exits!' % ev.traf_id
+            print('Traffic %d already exits!' % ev.traf_id)
             return False
         new_traf = Traffic()
         new_traf.traf_id = ev.traf_id
@@ -576,13 +575,13 @@ class Data:
         """
         #print ("PATH LIST", self.intra_domain_path_list.intra_domain_path_list)
 
-        for i in range(0, len(self.intra_domain_path_list.intra_domain_path_list)):
-            if self.intra_domain_path_list.intra_domain_path_list[i][0] == str(traf_id):
-                traf_id_           = self.intra_domain_path_list.intra_domain_path_list[i][0]
-                route_type_        = self.intra_domain_path_list.intra_domain_path_list[i][1]
-                cost_              = self.intra_domain_path_list.intra_domain_path_list[i][2]
-                routes_            = self.intra_domain_path_list.intra_domain_path_list[i][3]
-                common_avai_chnls_ = self.intra_domain_path_list.intra_domain_path_list[i][4]
+#        for i in range(0, len(self.intra_domain_path_list.intra_domain_path_list)):
+#            if self.intra_domain_path_list.intra_domain_path_list[i][0] == str(traf_id):
+#                traf_id_           = self.intra_domain_path_list.intra_domain_path_list[i][0]
+#                route_type_        = self.intra_domain_path_list.intra_domain_path_list[i][1]
+#                cost_              = self.intra_domain_path_list.intra_domain_path_list[i][2]
+#                routes_            = self.intra_domain_path_list.intra_domain_path_list[i][3]
+#                common_avai_chnls_ = self.intra_domain_path_list.intra_domain_path_list[i][4]
 
         # now use the last node of the route to get the edge node
         topo = self.phy_topo.get_topo()
@@ -691,7 +690,7 @@ class Data:
                             elif action == ACTION_TEARDOWN:
                                 tmp_phy_link.chnl_ava[chnl_no] = 0
                             else:
-                                print 'invalid action! (Database: update_phytopo)'
+                                print('invalid action! (Database: update_phytopo)')
                         break
                 node_2 = new_lsp.explicit_route.route[-1]
                 for tmp_phy_link in self.phy_topo.link_list:
@@ -702,7 +701,7 @@ class Data:
                             elif action == ACTION_TEARDOWN:
                                 tmp_phy_link.chnl_ava[chnl_no] = 0
                             else:
-                                print 'invalid action! (Database: update_phytopo)'
+                                print('invalid action! (Database: update_phytopo)')
                     break
                 return True
         return False

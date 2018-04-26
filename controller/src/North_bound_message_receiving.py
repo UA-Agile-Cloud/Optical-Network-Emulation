@@ -78,15 +78,13 @@ class North_bound_message_receive(ControllerBase):#app_manager.RyuApp):
         #self.listening_thread = hub.spawn(self._listening)
 
     def handle_empty_request(self,req,**_kwargs):
-        print '=========================================================='
-        #print req
-        #print '----------------------------------'
+        print('==========================================================')
 
     def handle_traffic_request(self, req, cmd, **_kwargs):
         json_str = req.body
         decoded = yaml.load(json_str)
         if cmd == 'add_device':
-            print 'Add Device Successfully'
+            print('Add Device Successfully')
             return 'add device'
         #else:
             #return 'Try ADD'
@@ -240,7 +238,3 @@ class RestStatsApi(app_manager.RyuApp):
 
         global RESTAPIobj
         RESTAPIobj = self
-       
-
-        
-            

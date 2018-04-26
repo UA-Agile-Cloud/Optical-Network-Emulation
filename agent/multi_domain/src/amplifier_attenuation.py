@@ -17,7 +17,7 @@ class AmplifierAttenuation():
 		self.link_distance_mapping = link_distance_mapping.main()
 		self.set_functions()
 		self.set_amplifier_attenuation()
-		print "Instantiated AmplifierAttenuation object."
+		print("Instantiated AmplifierAttenuation object.")
 
 	def get_function(self, func_id):
 		try:

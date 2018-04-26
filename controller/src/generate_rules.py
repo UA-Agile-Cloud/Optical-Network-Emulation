@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import virtual_port_mapping
-from time import sleep
 import os
+import sys
 
 vpm = virtual_port_mapping.main()
 

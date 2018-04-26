@@ -60,15 +60,12 @@ class North_bound_message_send(app_manager.RyuApp):
         data_string = json.dumps(status_return)
         #RESTAPIobj=data_string
         #print res
-        print '========================================================='
         url = '/TrafficReply'
         #conn = httplib.HTTPConnection('192.168.0.1:8888') #controller server ip and port
         conn = httplib.HTTPConnection('127.0.0.1:6666') #controller server ip and port
         conn.request(method="POST",url=url,body=data_string) 
         response = conn.getresponse()
         res= response
-        print '.............................'
-        print data_string
         return data_string
         
     @set_ev_cls(Custom_event.North_TrafficTeardownReplyEvent)
@@ -109,26 +106,3 @@ class North_bound_message_send(app_manager.RyuApp):
         print '.............................'
         print data_string
         return data_string
- 
-'''class RestStatsApi(app_manager.RyuApp):
-    _EVENTS =  [Custom_event.North_TrafficReplyEvent,
-                Custom_event.North_TrafficTeardownReplyEvent,
-                Custom_event.North_TrafficStateUpdateEvent]
-                
-    def __init__(self, *args, **kwargs):
-        super(RestStatsApi, self).__init__(*args, **kwargs)
-        self.data = {}
-        value={'Request_Class': 'TrafficRequestEvent','Msg_ID': 27, 'Traf_Stage': 'TRAFFIC_WORKING','Traf_State':'TRAFFIC_RECEIVE_REQUEST','Traf_Result':'SUCCESSFUL'}
-        jdata=json.dumps(value)
-        url = '/'
-        conn = httplib.HTTPConnection('192.168.0.1:8888')
-        conn.request(method="POST",url=url,body=jdata) 
-        response = conn.getresponse()
-        res= response
-        print res'''
-        
-
-
-
-
-            

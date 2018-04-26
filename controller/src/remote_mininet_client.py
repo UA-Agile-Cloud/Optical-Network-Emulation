@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import socket
 import sys
-import struct
 import json
 
 MININET_SERVER_PORT = 20001

@@ -8,11 +8,7 @@ Version:  2.0
 Last modified by Yao: 2017/01/17
 
 """
-
 from ryu.base import app_manager
-from ryu.controller.handler import set_ev_cls
-from ryu.lib import hub
-from ryu.controller import event
 from Common import *
 import Database
 import Custom_event
@@ -74,11 +70,11 @@ class Initialization(app_manager.RyuApp):
                 odom = line.split()        
                 new_node = Database.Phy_node()
                 new_node.node_ip = odom[0]
-	              #print new_node.node_ip
+#                print(new_node.node_ip)
                 new_node.node_id = int(odom[1])
-		            #print new_node.node_id
+#                print(new_node.node_id)
                 new_node.node_type = int(odom[2])
-		            #print new_node.node_type
+#                print(new_node.node_type)
                 Database.Data.phy_topo.node_list.append(new_node)
 #            for node in Database.Data.phy_topo.node_list:
 #                print node.node_ip
@@ -190,6 +186,6 @@ class Initialization(app_manager.RyuApp):
                 for i in range(int(odom[2])+1):
                     new_list.append(int(odom[i+3]))
                 Database.Data.controller_list.domain_sequence_list[(int(odom[0]), int(odom[1]))] = new_list
-	    print("Initialization: domain sequence list")
-            print Database.Data.controller_list.domain_sequence_list
+            print("Initialization: domain sequence list")
+            print(Database.Data.controller_list.domain_sequence_list)
     

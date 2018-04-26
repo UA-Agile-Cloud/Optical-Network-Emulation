@@ -124,24 +124,26 @@ OSNR_THRESHOLD = 5
 # total wavelength number
 WAVE_NUM = 90
 
-# Marcos end
+# Macros end
+DPID = 18
 
 # other parameters
 
 log_level = logging.DEBUG
-file_path = '/var/opt/sdn-optical/controller/init_files/Ryu_1/'
+telefonica = '/var/opt/sdn-optical/controller/init_files/telefonica/Ryu_1/'
+linear_topology = '/var/opt/sdn-optical/controller/init_files/linear_topology/Ryu_1/'
+file_path = linear_topology
 
 root_path_controller = '/var/opt/sdn-optical/controller/'
 
 import os
-print os.path.exists(file_path)
-print os.path.exists(root_path_controller)
+print(os.path.exists(file_path))
+print(os.path.exists(root_path_controller))
 
 # other parameters end
 
 # tmp use
 
-DPID = 18
 
 # tmp use end
 

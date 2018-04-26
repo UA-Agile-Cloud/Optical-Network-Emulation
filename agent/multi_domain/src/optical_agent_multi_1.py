@@ -25,9 +25,6 @@ from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_3
-from ryu.lib.packet import packet
-from ryu.lib.packet import ethernet
-from ryu.lib.packet import ether_types
 
 # For Control Plane management
 import socket
@@ -35,16 +32,12 @@ import sys
 import logging
 import thread
 import struct
-from struct import calcsize
-import scipy.constants as sc
 import json
 from time import sleep
 import virtual_port_mapping
-import random
-import link_distance_mapping
+import link
 import amplifier_attenuation
 from macros import *
-import math
 from decimal import *
 import numpy as np
 getcontext().prec = 16
@@ -118,7 +111,7 @@ class OpticalAgent(app_manager.RyuApp):
         self.abs_WSS_loss = self.dB_to_abs(9) # constant
 
         self.virtual_port_mapping = virtual_port_mapping.main()
-        self.link_distance_mapping = link_distance_mapping.main() # Key (Integer): (src_node, dst_node, distance, EDFA_NO) (Tuple)
+        self.links = link.Link()
         self.amplifier_attenuation = amplifier_attenuation.AmplifierAttenuation()
 
         try:
@@ -145,7 +138,7 @@ class OpticalAgent(app_manager.RyuApp):
         self.add_flow(datapath, 0, match, actions)
 
         self.switches[datapath.id] = datapath
-        logging.debug('switch_features_handler: datapath.id: %s', str(datapath.id))
+#        logging.debug('switch_features_handler: datapath.id: %s', str(datapath.id))
         self._switch_to_ports(datapath.id)
         self.switch_feature_reply_msg[datapath.id] = ev_msg
 
@@ -255,6 +248,11 @@ class OpticalAgent(app_manager.RyuApp):
             #output_power, output_noise = self.estimate_output_power_noise(input_power, input_noise, _lambda, flow_id)
             #self.update_switch_to_ports_power_noise(datapath.id, out_port, _lambda, output_power, output_noise)
             
+            print(flow_id)
+            print(datapath.id)
+            print(in_port)
+            print(out_port)
+            print(_lambda)
             output_power, output_noise = self.power_cal(flow_id, datapath.id, in_port, out_port, _lambda, input_power, input_noise)
             sleep(0.01)
             ############### Attention! Modified by Yao, 2017-10-13. End ######################
@@ -281,49 +279,8 @@ class OpticalAgent(app_manager.RyuApp):
 
                         osnr_list.append(t_osnr_list)
 
-                print osnr_list
-                print "####################################################"
-
-            # OLD VERSION - OSNR MONITORING - 2018-02-19
-
-            # self.power_list.append(output_power)
-            # self.noise_list.append(output_noise)
-
-            # # Onlyh for debugging purposes.
-            # logging.debug('_packet_in_handler: OSNR at port: %s in datapath: %s', str(out_port), str(datapath.id))
-            # if((output_power == 0 or output_noise == 0) is not True):
-            #     osnr = output_power / output_noise
-            #     self.osnr_list.append(osnr)
-
-            # if self.is_last_node_in_path(datapath.id, flow_id):
-            #     # Adding wavelength to paths structure for
-            #     # wavelength dependency calculation.
-            #     #self.paths[flow_id].append(int(_lambda))
-            #     #print(self.paths)
-
-            #     with open('/var/opt/sdn-optical/agent/multi_domain/logs/osnr_log.log', 'a+') as outfile:
-            #         json.dump(self.osnr_list, outfile)
-            #         sleep(0.01)
-            #         outfile.write('\n')
-            #         outfile.close()
-            #         # Resetting ONSR LIST
-            #         self.osnr_list = []
-
-            #         print self.switch_to_ports
-
-            #     with open('/var/opt/sdn-optical/agent/multi_domain/logs/power_log.log', 'a+') as outfile:
-            #         json.dump(self.power_list, outfile)
-            #         sleep(0.01)
-            #         outfile.write('\n')
-            #         outfile.close()
-            #         self.power_list = []
-
-            #     with open('/var/opt/sdn-optical/agent/multi_domain/logs/noise_log.log', 'a+') as outfile:
-            #         json.dump(self.noise_list, outfile)
-            #         sleep(0.01)
-            #         outfile.write('\n')
-            #         outfile.close()
-            #         self.noise_list = []
+                print(osnr_list)
+                print("####################################################")
 
             # Packet processing for sending OpenFlow Message.
             # Virtual port mapping
@@ -443,7 +400,6 @@ class OpticalAgent(app_manager.RyuApp):
         return False
 
     def is_first_node_in_path(self, datapath_id, flow_id):
-        i = len(self.paths[flow_id])
         first_node = self.paths[flow_id][0][0]
         if(datapath_id == first_node):
             return True
@@ -544,30 +500,34 @@ class OpticalAgent(app_manager.RyuApp):
         in_noise = (noise / self.abs_fiber_loss / self.abs_WSS_loss)
         return in_power, in_noise
 
-    def estimate_output_power_noise(self, node_id, input_power, input_noise, _lambda, flow_id):
+    def estimate_output_power_noise(self, node_id, input_power, input_noise, _lambda, flow_id, out_port):
+        print("estimate_output_power_noise: Entering with out_port: ", out_port)
+        print("estimate_output_power_noise: Entering with _lambda: ", _lambda)
 
         if(self.is_last_node_in_path(node_id, flow_id)):
-            print "estimate output power: LAST NODE"
+            print("estimate output power: LAST NODE")
             self.abs_WSS_loss = self.dB_to_abs(9)
             output_power = input_power / self.abs_WSS_loss
             output_noise = input_noise / self.abs_WSS_loss
             return output_power, output_noise
 
-        # try:
         dst_node = self.get_next_node(flow_id, node_id)
-        # Based on the destination node, retrieve the link ID from link_distance_mapping
+        # Based on the destination node, retrieve the link ID from links
         # and match it to the amplifier_attenuation object.
         # Then, iterate through the number of amplifiers, retrieving the corresponding
         # ripple function.
-        link_ID = self.get_link_ID(node_id, dst_node)
+        link_ID = self.links.get_link_ID(node_id, dst_node)
         amplifiers = self.amplifier_attenuation.get_amplifier_attenuation(link_ID)
 
-        EDFA_NO = self.get_EDFA_NO(node_id, dst_node)
-        link_distance = self.get_link_distance(node_id, dst_node)
+        EDFA_NO = self.links.get_EDFA_NO(node_id, dst_node)
+        print("EDFA_NO: ", EDFA_NO)
+        link_distance = self.links.get_link_distance(node_id, dst_node)
 
-        amp_no = 0 # counter for amplifiers in link
+        amp_no = 0 # counter for amplifiers in link, applies for span_id too
         self.update_fiber_loss(STANDARD_SPAN) # set standard span length
+        fibre_span = STANDARD_SPAN
         sleep(0.01)
+
         for function_ID in amplifiers:
             ripple_function = self.amplifier_attenuation.get_function(function_ID)
             amplifier_attenuation = ripple_function[_lambda]
@@ -577,13 +537,40 @@ class OpticalAgent(app_manager.RyuApp):
             else:
                 target_gain = self.dB_to_abs(TARGET_GAIN)
 
+            if amp_no == EDFA_NO-2:
+                fibre_span = self.get_last_span_length(EDFA_NO, link_distance)
+                self.abs_fiber_loss = self.dB_to_abs(0.2*fibre_span)
+                sleep(0.01)
+
+            # input_power should be the newly computed one (with SRS).
+            # The replacement of this parameter could lead the way to
+            # implement here the power excursion as well.
             output_power = target_gain * input_power * amplifier_attenuation
             output_noise = self.calculate_out_noise(input_noise, _lambda, target_gain*amplifier_attenuation)
 
-            if amp_no == EDFA_NO-2:
-                last_span = self.get_last_span_length(EDFA_NO, link_distance)
-                self.abs_fiber_loss = self.dB_to_abs(0.2*last_span)
-                sleep(0.01)
+            print("estimate_output_power_noise: Power and noise computed.")
+
+            # insert "new" channel-power_level relation to active_channels.
+            #if amp_no < EDFA_NO-1:
+            print("insert new channel-power_level relation to active_channels, amp_no: ", amp_no)
+            self.links.set_active_channel(link_ID, amp_no, _lambda, output_power)
+
+            # This is done at this point, because the input_power to be used
+            # for the computation of the output_power is already sharing
+            # the fibre with other channels (if any).
+            active_channels_per_span = self.links.get_active_channels(link_ID, amp_no)
+            print("estimate_output_power_noise: get active channel")
+            # Check if active channels is  not single channel, or
+            # if the loop is not at the last EDFA.
+            if (len(active_channels_per_span) > 1) and (amp_no < EDFA_NO-1):
+                    # compute SRS impairment
+                    new_active_channels_per_span = self.links.calculate_SRS(active_channels_per_span, fibre_span)
+                    print("estimate_output_power_noise: set new active channel")
+                    self.links.update_active_channels(link_ID, span_id, new_active_channels_per_span)
+                    output_power = self.links.get_power_level(link_ID, amp_no, _lambda)
+                    # compute power and noise without considering SRS
+
+            # This is ignored in last computation.
             input_power = output_power / self.abs_fiber_loss
             input_noise = output_noise / self.abs_fiber_loss
 
@@ -644,8 +631,8 @@ class OpticalAgent(app_manager.RyuApp):
         for port in range(1,2*ports_number+1):
             # First position: Power values
             # Second position: noise values
-            _struct_a = [0.0] * 70
-            _struct_b = [0.0] * 70
+            _struct_a = [0.0] * CHANNEL_NUMBER
+            _struct_b = [0.0] * CHANNEL_NUMBER
             port_to_lambda_noise = [_struct_a, _struct_b]
             ports_to_lambdas_noise[port] = port_to_lambda_noise
 
@@ -799,7 +786,6 @@ class OpticalAgent(app_manager.RyuApp):
         try:
             while(1):
                 data = sock.recv(4096)
-                original_data = data
                 data = [ord(c) for c in data]
                 data = bytearray(data)
                 if self.ofp_belong_to(data) == 'HELLO':
@@ -948,8 +934,8 @@ class OpticalAgent(app_manager.RyuApp):
                                                             end_channel))
 
         #datapath = self.switches[datapath_id]
-        datapath = self.switches[node_id]
-        parser = datapath.ofproto_parser
+        #datapath = self.switches[node_id]
+        #parser = datapath.ofproto_parser
 
         # Retrieve flow ID (experiment 1)
         flow_id = experiment1
@@ -1098,7 +1084,6 @@ class OpticalAgent(app_manager.RyuApp):
         n_buffers = ev_msg.n_buffers
         n_tables = ev_msg.n_tables
         auxiliary_id = ev_msg.auxiliary_id
-        pad = 0
         capabilities = ev_msg.capabilities
         reserved = 0
         # The format required is: '!BBHIQIBBHII'
@@ -1161,17 +1146,18 @@ class OpticalAgent(app_manager.RyuApp):
                     wavelength_no = len(self.switch_to_ports[current_node][key_port][0])
                     for key_wave in range(0,wavelength_no):
                         value_wave = self.switch_to_ports[current_node][key_port][0][key_wave]
-                        if value_wave is not switch_to_port_old[current_node][key_port][0][key_wave]:
-                            for flow in self.paths:
+                        if value_wave is not switch_to_port_old[current_node][key_port][0][key_wave]: # ???? this should ONLY enter for the new /NOT considered channel
+                            for flow in self.paths: # This would enter for EVERY flow - this is an ERROR
                                 if flow is not 0:
                                     flow_struct = self.paths[flow]
                                     for flow_node in flow_struct:
-                                        if (flow_node[0] == current_node) and (flow_node[1] == key_port):
+                                        if (flow_node[0] == current_node) and (flow_node[1] == key_port): # In a linear topology, this will always enter
                                             input_power = value_wave
                                             input_noise = self.switch_to_ports[current_node][key_port][1][key_wave]
                                             if((input_power == 0 and input_noise == 0) is not True):
-                                                out_signal, out_noise = self.estimate_output_power_noise(current_node, input_power, input_noise, key_wave, flow)
                                                 out_port = flow_node[2]
+                                                out_signal, out_noise = self.estimate_output_power_noise(current_node, input_power, input_noise, key_wave, flow, out_port)
+                                                print("power_cal, out_signal: ", out_signal)
                                                 self.switch_to_ports[current_node][out_port][0][key_wave] = out_signal
                                                 self.switch_to_ports[current_node][out_port][1][key_wave] = out_noise
                                                 switch_to_port_old[current_node][key_port][0][key_wave] = input_power
@@ -1180,9 +1166,7 @@ class OpticalAgent(app_manager.RyuApp):
                                                 break
             if flag_need_recalculation == False:
                 continue            
-
-            print "OK 1"
-                             
+                
             # nomarlize output powers
             for key_port in self.switch_to_ports[current_node].keys():
                 if (key_port % 2 == 0) and ((self.switch_to_ports[current_node][key_port][0] == switch_to_port_old[current_node][key_port][0]) is not True):
@@ -1203,8 +1187,6 @@ class OpticalAgent(app_manager.RyuApp):
                     self.switch_to_ports[current_node][key_port][0] = [x/float(current_gain) for x in self.switch_to_ports[current_node][key_port][0]]
                     self.switch_to_ports[current_node][key_port][1] = [x/float(current_gain) for x in self.switch_to_ports[current_node][key_port][1]]
 
-            print "OK 2"
-                    
             # calculate excursion and propogate power changes
             for key_port in self.switch_to_ports[current_node].keys():
                 if (key_port % 2 == 0) and ((self.switch_to_ports[current_node][key_port][0] == switch_to_port_old[current_node][key_port][0]) is not True):
@@ -1246,8 +1228,6 @@ class OpticalAgent(app_manager.RyuApp):
                             if (next_node_queue.empty()):
                             #if next_node not in next_node_queue: THIS LINE DOES NOT WORK
                                 next_node_queue.put(next_node)
-
-            print "OK 3"
         
         return self.switch_to_ports[node_no][output_port][0][wavelength], self.switch_to_ports[node_no][output_port][1][wavelength]
     ############### Attention! Added by Yao, 2017-10-13. End ###################### 
@@ -1256,7 +1236,7 @@ class OpticalAgent(app_manager.RyuApp):
         try:
             if self.is_last_node_in_path(node_id, flow_id) is not True:
                 dst_node = self.get_next_node(flow_id, node_id)
-                link_ID = self.get_link_ID(node_id, dst_node)
+                link_ID = self.links.get_link_ID(node_id, dst_node)
                 mean_amplifier_attenuation = self.amplifier_attenuation.get_mean_amplifier_attenuation(link_ID, _lambda)
                 return mean_amplifier_attenuation
             else:
@@ -1352,39 +1332,6 @@ class OpticalAgent(app_manager.RyuApp):
             print('Err: get_last_span_length. Unable to compute last span length.')
             return 1
 
-    def get_link_distance(self, src_node, dst_node):
-        try:
-            for link_id in self.link_distance_mapping:
-                link = self.link_distance_mapping[link_id]
-                if(link[0] == src_node) and (link[1] == dst_node):
-                    distance = link[2]
-                    EDFA_NO = link[3]
-                    return distance
-        except:
-            print('Err: get_link_distance. Unable to compute link distance.')
-            return 1
-
-    def get_EDFA_NO(self, src_node, dst_node):
-        try:
-            for link_id in self.link_distance_mapping:
-                link = self.link_distance_mapping[link_id]
-                if(link[0] == src_node) and (link[1] == dst_node):
-                    EDFA_NO = link[3]
-                    return EDFA_NO
-        except:
-            print('Err: get_EDFA_NO. Unable to compute EDFA number.')
-            return 1
-
-    def get_link_ID(self, src_node, dst_node):
-        try:
-            for link_id in self.link_distance_mapping:
-                link = self.link_distance_mapping[link_id]
-                if(link[0] == src_node) and (link[1] == dst_node):
-                    return link_id
-        except:
-            print('Err: get_link_ID. Unable to compute EDFA number.')
-            return 1
-
     def get_next_node(self, flow_id, datapath_id):
         try:
             if flow_id in self.paths:
@@ -1405,8 +1352,7 @@ class OpticalAgent(app_manager.RyuApp):
                 flow = self.paths[flow_id]
                 for _tuple in flow:
                     if _tuple[0] == src_node:
-                        return prev_node
-                    prev_node = _tuple[0]                    
+                        return prev_node                
         except:
             print('Err: get_prev_node. Unable to compute prev node in path.')
             return -1
