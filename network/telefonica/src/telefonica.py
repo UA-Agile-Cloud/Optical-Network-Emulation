@@ -19,9 +19,9 @@ import socket
 import sys
 import json
 
-telefonica_src='/var/opt/sdn-optical/network/telefonica/src/'
+telefonica_src='/var/opt/Optical-Network-Emulation/network/telefonica/src/'
 probing_instruction='python ' + telefonica_src + 'probing_packet.py'
-log_file='/var/opt/sdn-optical/network/logs/network.log'
+log_file='/var/opt/Optical-Network-Emulation/network/logs/network.log'
 logging.basicConfig(filename=log_file,level=logging.INFO,format='%(asctime)s %(message)s',datefmt='%d/%m/%Y %H:%M:%S')
 
 if '__main__' == __name__:

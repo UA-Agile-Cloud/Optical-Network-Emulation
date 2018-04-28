@@ -31,7 +31,7 @@ public class RequestSending {
     };
 
     //set the filepath to read the node info and request
-    final static String file_path = "/var/opt/sdn-optical/java-app/";
+    final static String file_path = "/var/opt/Optical-Network-Emulation/java-app/";
 
     //==========================start of Dikjstra for domain sequence routing============================
     //define each domain as a node or vertex

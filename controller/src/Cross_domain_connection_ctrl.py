@@ -63,7 +63,7 @@ class Cross_domain_connection_ctrl(app_manager.RyuApp):
             return
 	#self.logger.debug(Database.Data.controller_list.this_controller.controller_ip)
 	#self.logger.debug(ev.domain_sequence[0])
-        print ev.domain_sequence[0]
+        print(ev.domain_sequence[0])
         if (Database.Data.controller_list.is_this_domain(ev.domain_sequence[0]) == False):      # this domain is not the source domian
             self.logger.debug('This domain is not the source domain of cross-domain traffic %d. Waiting...'%ev.traf_id)
             return
@@ -147,7 +147,7 @@ class Cross_domain_connection_ctrl(app_manager.RyuApp):
                 osnr_req_ev = Custom_event.South_OSNRMonitoringRequestEvent()
                 osnr_req_ev.traf_id = ev.traf_id
                 osnr_req_ev.route_type = ROUTE_INTRA_REROUTE
-		hub.sleep(1)
+                hub.sleep(1)
                 self.send_event('Monitoring', osnr_req_ev)
             else:
                 if Database.Data.controller_list.is_this_domain(this_traf.domain_sequence[0]) == True:
@@ -235,21 +235,21 @@ class Cross_domain_connection_ctrl(app_manager.RyuApp):
             traf_setup_reply_ev.result = ev.result
             self.send_event('EastWest_message_send', traf_setup_reply_ev)
         else:
-	    if ev.traf_stage == TRAFFIC_WORKING:
+            if ev.traf_stage == TRAFFIC_WORKING:
                 traf_reply_ev = Custom_event.North_TrafficReplyEvent()
                 traf_reply_ev.traf_id = ev.traf_id
                 traf_reply_ev.traf_stage = ev.traf_stage
                 traf_reply_ev.traf_state = ev.traf_state
                 traf_reply_ev.result = ev.result
                 self.send_event('North_bound_message_send', traf_reply_ev)
-	    elif ev.traf_stage == TRAFFIC_REROUTING:
-		traf_update_ev = Custom_event.North_TrafficStateUpdateEvent()
-		traf_update_ev.traf_id = ev.traf_id
-		traf_update_ev.traf_stage = ev.traf_stage
-		traf_update_ev.traf_state = ev.traf_state
-		self.send_event('North_bound_message_send', traf_update_ev)
-	    else:
-		pass	#complete later
+            elif ev.traf_stage == TRAFFIC_REROUTING:
+                traf_update_ev = Custom_event.North_TrafficStateUpdateEvent()
+                traf_update_ev.traf_id = ev.traf_id
+                traf_update_ev.traf_stage = ev.traf_stage
+                traf_update_ev.traf_state = ev.traf_state
+                self.send_event('North_bound_message_send', traf_update_ev)
+            else:
+                pass	#complete later
             
             if ev.traf_state == TRAFFIC_SETUP_FAIL:
                 traf_tear_req_ev = Custom_event.EastWest_SendTrafTeardownRequest()
@@ -265,15 +265,15 @@ class Cross_domain_connection_ctrl(app_manager.RyuApp):
                     sonr_req_ev = Custom_event.South_OSNRMonitoringRequestEvent()
                     sonr_req_ev.traf_id = ev.traf_id
                     sonr_req_ev.route_type = ROUTE_WORKING
-		    hub.sleep(1)
+                    hub.sleep(1)
                     self.send_event('Monitoring', sonr_req_ev)
                 elif ev.traf_stage == TRAFFIC_REROUTING:
                     sonr_req_ev = Custom_event.South_OSNRMonitoringRequestEvent()
                     sonr_req_ev.traf_id = ev.traf_id
                     sonr_req_ev.route_type = ROUTE_REROUTE
-		    hub.sleep(1)
+                    hub.sleep(1)
                     self.send_event('Monitoring', sonr_req_ev)
-		    hub.sleep(0.01)
+                    hub.sleep(0.01)
                     tear_path_ev = Custom_event.EastWest_SendTearDownPath()
                     tear_path_ev.traf_id = ev.traf_id
                     tear_path_ev.route_type = ROUTE_WORKING
@@ -342,8 +342,8 @@ class Cross_domain_connection_ctrl(app_manager.RyuApp):
                     route_type = ROUTE_WORKING
                 elif (this_traf.traf_stage == TRAFFIC_REROUTING) and (this_traf.traf_state == TRAFFIC_INTRA_DOMAIN_REROUTE_SUCCESS):
                     route_type = ROUTE_INTRA_REROUTE
-		elif this_traf.traf_stage == TRAFFIC_REROUTING:
-		    route_type = ROUTE_REROUTE
+                elif this_traf.traf_stage == TRAFFIC_REROUTING:
+                    route_type = ROUTE_REROUTE
                 else:
                     self.logger.critical('Invalid traffic stage. (Cross_domain_connection_ctrl: _handle_OSNR_monitoring_reply)')
                     return
@@ -382,7 +382,7 @@ class Cross_domain_connection_ctrl(app_manager.RyuApp):
                     else:
                         self.logger.warning('Invalid traffic protection type. (Cross_domain_connection_ctrl: _handle_OSNR_monitoring_reply)')
                 else:
-		    if Database.Data.controller_list.is_this_domain(this_traf.domain_sequence[0]) != True:
+                    if Database.Data.controller_list.is_this_domain(this_traf.domain_sequence[0]) != True:
                         #send EastWest_SendOSNRMonitoringReplyEvent to 'EastWest_message_send' (is_inter_domain_impairment == True)
                         osnr_reply_ev = Custom_event.EastWest_SendOSNRMonitoringReplyEvent()
                         osnr_reply_ev.traf_id = ev.traf_id
@@ -392,8 +392,8 @@ class Cross_domain_connection_ctrl(app_manager.RyuApp):
                         osnr_reply_ev.traf_stage = this_traf.traf_stage
                         osnr_reply_ev.traf_state = this_traf.traf_state
                         self.send_event('EastWest_message_send', osnr_reply_ev)
-		    else:
-			self.logger.critical('Attention! OSNR at the sending point is not good!')
+                    else:
+                        self.logger.critical('Attention! OSNR at the sending point is not good!')
             elif this_traf.traf_stage == TRAFFIC_REROUTING:
                 Database.Data.traf_list.update_traf_state(ev.traf_id, TRAFFIC_INACTIVE)
                 if Database.Data.controller_list.is_this_domain(this_traf.domain_sequence[0]) == True:
@@ -403,7 +403,7 @@ class Cross_domain_connection_ctrl(app_manager.RyuApp):
                     traf_state_update_ev.traf_stage = this_traf.traf_stage
                     traf_state_update_ev.traf_state = None
                     self.send_event('North_bound_message_send', traf_state_update_ev)
-		    self.logger.info('Traffic inactive')
+                    self.logger.info('Traffic inactive')
                 else:
                     #send EastWest_SendOSNRMonitoringReplyEvent to 'EastWest_message_send' 
                     osnr_reply_ev = Custom_event.EastWest_SendOSNRMonitoringReplyEvent()
@@ -496,7 +496,7 @@ class Cross_domain_connection_ctrl(app_manager.RyuApp):
                 elif this_traf.traf_stage == TRAFFIC_REROUTING:
                     if ev.traf_stage == TRAFFIC_INACTIVE:
                         Database.Data.traf_list.update_traf_stage(ev.traf_id, ev.traf_stage)
-			self.logger.info('Traffic %d inactive.' % ev.traf_id)
+                        self.logger.info('Traffic %d inactive.' % ev.traf_id)
                         #send Custom_event.North_TrafficStateUpdateEvent to 'North_bound_message_send'
                         traf_update_ev = Custom_event.North_TrafficStateUpdateEvent()
                         traf_update_ev.traf_id = ev.traf_id
@@ -616,7 +616,8 @@ class Cross_domain_connection_ctrl(app_manager.RyuApp):
         flag = False
         for this_lsp in Database.Data.lsp_list.lsp_list:
             if this_lsp.traf_id == ev.traf_id and this_lsp.lsp_state != LSP_UNPROVISIONED:
-                flage = True
+                pass
+                #flage = True
         if flag:
             lsp_tear_ev = Custom_event.South_LSPTeardownRequestEvent()
             lsp_tear_ev.traf_id = ev.traf_id

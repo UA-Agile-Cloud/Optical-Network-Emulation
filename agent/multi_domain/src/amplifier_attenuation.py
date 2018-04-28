@@ -7,7 +7,7 @@ import os
 import random
 import numpy as np
 
-directory = '/var/opt/sdn-optical/agent/multi_domain/src/function-files/'
+directory = '/var/opt/Optical-Network-Emulation/agent/multi_domain/src/function-files/'
 
 class AmplifierAttenuation():
 	functions = {} # Function ID (Integer): Y points (List of Floats)

@@ -56,4 +56,4 @@ do
 done
 rm topo
 # Send file to public space in system 'sandra'
-rsync -e 'ssh -p 22' -avz ../../public/network/node_to_ports alan@134.226.55.22:/var/opt/sdn-optical/public/network/
+#rsync -e 'ssh -p 22' -avz ../../public/network/node_to_ports alan@134.226.55.22:/var/opt/sdn-optical/public/network/

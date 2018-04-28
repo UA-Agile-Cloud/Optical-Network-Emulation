@@ -3,6 +3,7 @@ import math
 from macros import *
 # Class definition of Optical Links considering the
 # Mininet implementation.
+PROP_TH = 0.01
 class Link():
     # +300km
     def __init__(self, *args, **kwargs): 
@@ -94,41 +95,31 @@ class Link():
 
     def set_active_channel(self, link_id, span_id, channel, power_level,  noise_level,  amplifier_attenuation):
         try:
-            print("set_active_channel")
-            print(self.active_channels_per_link[link_id])
-            print(self.active_channels_per_link[link_id][span_id][0])
-            print("power_level: ", power_level)
             self.active_channels_per_link[link_id][span_id][0][channel] = power_level
             self.active_channels_per_link[link_id][span_id][1][channel] = noise_level
             self.active_channels_per_link[link_id][span_id][2][channel] = amplifier_attenuation
-            print(self.active_channels_per_link[link_id][span_id][0][channel])
-            print(self.active_channels_per_link[link_id][span_id][1][channel])
-            print(self.active_channels_per_link[link_id][span_id][2][channel])
         except:
             print("Err: set_active_channel: Unable to insert active channel: ", str(channel))
             
     def get_power_level(self, link_id, span_id, channel):
         try:
-            print("get_power_level")
-            print(str(self.active_channels_per_link[link_id][span_id][0]))
-            print("For _lambda: ", channel)
             return self.active_channels_per_link[link_id][span_id][0][channel]
         except:
             print("Err: get_power_level: Unable to retrieve power level channel: ", str(channel))
             
     def get_noise_level(self, link_id, span_id, channel):
         try:
-            print("get_noise_level")
-            print(str(self.active_channels_per_link[link_id][span_id][1]))
-            print("For _lambda: ", channel)
             return self.active_channels_per_link[link_id][span_id][1][channel]
         except:
             print("Err: get_power_level: Unable to retrieve noise level channel: ", str(channel))
             
     def get_active_channels_power_noise(self,  link_id, span_id):
-        not_normalized_power = lself.active_channels_per_link[link_id][span_id][0].values()
-        not_normalized_noise = self.active_channels_per_link[link_id][span_id][1].values()
-        return not_normalized_power,  not_normalized_noise
+        try:
+            not_normalized_power = self.active_channels_per_link[link_id][span_id][0].values()
+            not_normalized_noise = self.active_channels_per_link[link_id][span_id][1].values()
+            return not_normalized_power,  not_normalized_noise
+        except:
+            print("Err: (Class Link) get_active_channels_power_noise: Unable to get power and noise levels: ")
             
     def update_active_channels(self, link_id, span_id, active_channels_per_span):
         try:
@@ -210,30 +201,29 @@ class Link():
         print("Class link: calculate_SRS OK.")
         return channel_powers
 
-        def normalize_channel_levels(self,  link_id,  span_id):
-            try:
-                # Add amplifier attenuation of each channel
-                system_gain = sum(self.active_channels_per_link[link_id][span_id][2].values())
-                channel_count = self.active_channels_per_span.get_count_active_channels(link_ID,  span_id)
-                system_gain = system_gain/float(channel_count)
-                
-                power_levels = self.active_channels_per_link[link_id][span_id][0].values()
-                noise_levels = self.active_channels_per_link[link_id][span_id][1].values()
-                normalized_power = [x/float(system_gain) for x in power_levels]
-                normalized_noise = [x/float(system_gain) for x in noise_levels]
-                
-                self.update_active_channels_dict(link_id,  span_id,  normalized_power,  0)
-                self.update_active_channels_dict(link_id,  span_id,  normalized_noise,  1)
-            except:
-                print("Err: normalize_power_levels: Unable to normilize power levels channel: ", str(channel))
-            return 0
+    def normalize_channel_levels(self,  link_id,  span_id):
+        try:
+            # Add amplifier attenuation of each channel
+            system_gain = sum(self.active_channels_per_link[link_id][span_id][2].values())
+            channel_count = self.get_count_active_channels(link_id,  span_id)
+            system_gain = system_gain/float(channel_count)
             
-        def power_excursion_propagation(self, link_id,  span_id,  not_normalized_power,  not_normalized_noise):
-            normalized_power = list(self.active_channels_per_link[link_id][span_id][0].values())
-            normalized_noise = list(self.active_channels_per_link[link_id][span_id][1].values())
-            total_power = map(lambda x: x[0]*x[1]+x[0], zip(normalized_power, normalized_noise))
-            total_power_old = map(lambda x: x[0]*x[1]+x[0], zip(not_normalized_power, not_normalized_noise))
-            excursion = max(map(lambda x: abs(x[0]-x[1]), zip(total_power, total_power_old)))
-            if excursion < PROP_TH:
-                return 0
-            return 1
+            power_levels = self.active_channels_per_link[link_id][span_id][0].values()
+            noise_levels = self.active_channels_per_link[link_id][span_id][1].values()
+            normalized_power = [x/float(system_gain) for x in power_levels]
+            normalized_noise = [x/float(system_gain) for x in noise_levels]
+            
+            self.update_active_channels_dict(link_id,  span_id,  normalized_power,  0)
+            self.update_active_channels_dict(link_id,  span_id,  normalized_noise,  1)
+        except:
+            print("Err: normalize_power_levels: Unable to normilize power levels channel: ", str(channel))
+            
+    def power_excursion_propagation(self, link_id,  span_id,  not_normalized_power,  not_normalized_noise):
+        normalized_power = list(self.active_channels_per_link[link_id][span_id][0].values())
+        normalized_noise = list(self.active_channels_per_link[link_id][span_id][1].values())
+        total_power = map(lambda x: x[0]*x[1]+x[0], zip(normalized_power, normalized_noise))
+        total_power_old = map(lambda x: x[0]*x[1]+x[0], zip(not_normalized_power, not_normalized_noise))
+        excursion = max(map(lambda x: abs(x[0]-x[1]), zip(total_power, total_power_old)))
+        if excursion < PROP_TH:
+            return 0
+        return 1

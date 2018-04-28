@@ -47,7 +47,7 @@ import Queue
 import copy
 ############### Attention! Added by Yao, 2017-10-13. End ###################### 
 
-log_file='/var/opt/sdn-optical/agent/multi_domain/logs/agent.log'
+log_file='/var/opt/Optical-Network-Emulation/agent/multi_domain/logs/agent.log'
 logging.basicConfig(filename=log_file,level=logging.INFO,format='%(asctime)s %(message)s',datefmt='%d/%m/%Y %H:%M:%S')
 # log_level = 'DEBUG' #Set log level
 # if log_level == 'INFO':
@@ -70,7 +70,7 @@ WSS_TEARDOWN_REPLY_STR = '!QII'
 GET_OSNR_REQUEST_STR = '!QIIIIIIII'
 GET_OSNR_REPLY_STR = '!QIIII'
 
-node_to_ports='/var/opt/sdn-optical/public/network/node_to_ports'#inversed_
+node_to_ports='/var/opt/Optical-Network-Emulation/public/network/node_to_ports'#inversed_
 
 ############### Attention! Added by Yao, 2017-10-13. ###################### 
 PROP_TH = 0.01
@@ -581,23 +581,23 @@ class OpticalAgent(app_manager.RyuApp):
                 print("Class OpticalAgent: estimate_output: Entered SRS-NORMALIZATION-EXCURSION")
                 # compute SRS impairment
                 new_active_channels_per_span = self.links.calculate_SRS(active_channels_per_span, fibre_span)
-                print("estimate_output_power_noise: set new active channel")
-                self.links.update_active_channels(link_ID, span_id, new_active_channels_per_span)
-                
+                self.links.update_active_channels(link_ID, amp_no, new_active_channels_per_span)
+                print("Class OpticalAgent: estimate_output_power_noise: update_active_channels OK")
                 # Store not normalized power and noise levels
                 # to be considered in the power excursion calculation
-                not_normalized_power,  not_normalized_noise = self.links.get_active_channels_power_noise(link_ID, span_id)
-                
+                not_normalized_power,  not_normalized_noise = self.links.get_active_channels_power_noise(link_ID, amp_no)
+                print("Class OpticalAgent: estimate_output_power_noise: get_active_channels_power_noise OK")
+                sleep(0.5)
                 # Consider channel-normalization per-span
-                self.links.normalize_channel_levels(link_ID,  span_id)
-                
+                self.links.normalize_channel_levels(link_ID, amp_no)
+                print("Class OpticalAgent: estimate_output_power_noise: normalize_channel_levels OK")
                 # Consider power excursion and propagation per-span
-                EXCURSION_OK = self.links.power_excursion_propagation(link_ID,  span_id,  not_normalized_power,  not_normalized_noise)
+                EXCURSION_OK = self.links.power_excursion_propagation(link_ID,  amp_no,  not_normalized_power,  not_normalized_noise)
                 
                 if EXCURSION_OK:
-                    continue
+                    print("Class OpticalAgent: estimate_output_power_noise: EXCURSION_OK")
                 else:
-                    print("estimate_output_power_noise: EXCURSION_OK error")
+                    print("Class OpticalAgent: estimate_output_power_noise: EXCURSION_OK error")
                     
                 output_power = self.links.get_power_level(link_ID, amp_no, wavelength)
                 output_noise = self.links.get_noise_level(link_ID, amp_no, wavelength)
@@ -789,7 +789,7 @@ class OpticalAgent(app_manager.RyuApp):
             self.openflow_mgmt(switch, sock) # This will loop forever to handle the
                                              # upper-level OpenFlow messages.
         except Exception as e:
-            logging.critical('Unable to create socket connection to Controller')
+            logging.critical('Unable to create socket connection to Controller %s' %e)
             sys.exit()
             
     # _socket_to_phy_conn records the relations between the connections

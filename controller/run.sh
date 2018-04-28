@@ -1,4 +1,4 @@
-SRC_PATH='/var/opt/sdn-optical/controller/src'
+SRC_PATH='/var/opt/Optical-Network-Emulation/controller/src'
 ryu-manager --verbose --ofp-tcp-listen-port 6666 --wsapi-port 8080 \
 $SRC_PATH/Cross_domain_connection_ctrl.py \
 $SRC_PATH/EastWest_bound_message_receiving.py \

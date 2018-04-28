@@ -1,0 +1,3 @@
+#!/bin/bash
+SRC_PATH='/var/opt/Optical-Network-Emulation/network/small-linear'
+python $SRC_PATH/src/small-linear.py &

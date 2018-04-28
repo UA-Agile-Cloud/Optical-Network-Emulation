@@ -130,11 +130,11 @@ DPID = 18
 # other parameters
 
 log_level = logging.DEBUG
-telefonica = '/var/opt/sdn-optical/controller/init_files/telefonica/Ryu_1/'
-linear_topology = '/var/opt/sdn-optical/controller/init_files/linear_topology/Ryu_1/'
+telefonica = '/var/opt/Optical-Network-Emulation/controller/init_files/telefonica/Ryu_1/'
+linear_topology = '/var/opt/Optical-Network-Emulation/controller/init_files/linear_topology/Ryu_1/'
 file_path = linear_topology
 
-root_path_controller = '/var/opt/sdn-optical/controller/'
+root_path_controller = '/var/opt/Optical-Network-Emulation/controller/'
 
 import os
 print(os.path.exists(file_path))

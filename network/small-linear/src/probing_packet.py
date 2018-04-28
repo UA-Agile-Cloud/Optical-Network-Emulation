@@ -21,7 +21,7 @@ from ostinato.protocols.ip6_pb2 import Ip6, ip6
 from ostinato.protocols.payload_pb2 import Payload, payload
 from ostinato.protocols.mac_pb2 import Mac, mac
 
-log_file='/var/opt/sdn-optical/network/logs/probing_packet.log'
+log_file='/var/opt/Optical-Network-Emulation/network/logs/probing_packet.log'
 logging.basicConfig(filename=log_file,level=logging.INFO,format='%(asctime)s %(message)s',datefmt='%d/%m/%Y %H:%M:%S')
 
 logging.info('probing_packet: Entering...')
