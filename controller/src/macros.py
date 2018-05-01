@@ -22,6 +22,11 @@ IN_NOISE = 1e-10
 # Link span between EDFAs
 STANDARD_SPAN = int(100)
 
+# For remote mininet client
+MININET_SERVER_PORT = 20001
+MININET_SERVER_IP = '134.226.55.100'
+#MININET_SERVER_IP = '127.0.0.1'
+
 telefonica_links_distance = [	(1, 2, 590),
 			(1, 3, 660),			
 			(2, 3, 550),

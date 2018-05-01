@@ -80,7 +80,7 @@ class Link():
             
     def get_active_channels(self, link_id, span_id):
         try:
-            print("Class link: get_active_channels: returning %s" %self.active_channels_per_link[link_id][span_id][0])
+            #print("Class link: get_active_channels: noise %s" %self.active_channels_per_link[link_id][span_id][1])
             return self.active_channels_per_link[link_id][span_id][0]
         except:
             print('Err: get_active_channels: Unable to return active channels')
@@ -198,7 +198,6 @@ class Link():
             delta_P = 10*math.log10(R1/R2)
             channel_powers[wavelength_index] += round(delta_P,2)
             
-        print("Class link: calculate_SRS OK.")
         return channel_powers
 
     def normalize_channel_levels(self,  link_id,  span_id):
@@ -224,6 +223,7 @@ class Link():
         total_power = map(lambda x: x[0]*x[1]+x[0], zip(normalized_power, normalized_noise))
         total_power_old = map(lambda x: x[0]*x[1]+x[0], zip(not_normalized_power, not_normalized_noise))
         excursion = max(map(lambda x: abs(x[0]-x[1]), zip(total_power, total_power_old)))
+        #print("Class Link: power_excursion_propagation: excursion: %s" %excursion)
         if excursion < PROP_TH:
-            return 0
-        return 1
+            return False
+        return True

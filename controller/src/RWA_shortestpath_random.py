@@ -157,7 +157,7 @@ def rerouting(traf_id, sources, destinations, bw_demand):
         paths.append([traf_id_, route_type_, cost_, route_, common_avai_chnls_])
         return paths
     
-def rsc_allocation(traf_id, bw_demand):
+def rsc_allocation(traf_id, bw_demand,  CHANNEL_AVAIL):
     """input: traf_id, bw_demand
        output: a list of [path_id, resources (a list)]. If not found, return None
     """  
@@ -170,7 +170,12 @@ def rsc_allocation(traf_id, bw_demand):
     while len(res_bw_) > bw_demand/50 :
         res_bw_.remove(random.choice(res_bw_))
     if (list(res_bw_) != []) and len(res_bw_) == bw_demand/50:
-        res_allc_.append([path_id_, res_bw_])
+#        print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+#        print(res_bw_)
+#        print(CHANNEL_AVAIL)
+#        print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        #res_allc_.append([path_id_, res_bw_])
+        res_allc_.append([path_id_, CHANNEL_AVAIL])
         return res_allc_
     else:
         return None

@@ -70,7 +70,7 @@ WSS_TEARDOWN_REPLY_STR = '!QII'
 GET_OSNR_REQUEST_STR = '!QIIIIIIII'
 GET_OSNR_REPLY_STR = '!QIIII'
 
-node_to_ports='/var/opt/Optical-Network-Emulation/public/network/node_to_ports'#inversed_
+node_to_ports='/var/opt/Optical-Network-Emulation/public/network/node_to_ports'
 
 ############### Attention! Added by Yao, 2017-10-13. ###################### 
 PROP_TH = 0.01
@@ -113,6 +113,9 @@ class OpticalAgent(app_manager.RyuApp):
         self.virtual_port_mapping = virtual_port_mapping.main()
         self.links = link.Link()
         self.amplifier_attenuation = amplifier_attenuation.AmplifierAttenuation()
+        
+        # For labeling log files
+        self.log_no = 0
 
         try:
             thread.start_new_thread(self.inter_domain_listener,) # the comma (,) is needed
@@ -248,11 +251,11 @@ class OpticalAgent(app_manager.RyuApp):
             #output_power, output_noise = self.estimate_output_power_noise(input_power, input_noise, _lambda, flow_id)
             #self.update_switch_to_ports_power_noise(datapath.id, out_port, _lambda, output_power, output_noise)
             
-            print(flow_id)
-            print(datapath.id)
-            print(in_port)
-            print(out_port)
-            print(_lambda)
+#            print(flow_id)
+#            print(datapath.id)
+#            print(in_port)
+#            print(out_port)
+#            print(_lambda)
             # Instead of power_cal, for the calculation of output_P,N
             # it is just necessary to invoke the function:
             # self.estimate_output_power_noise(input_power, input_noise, _lambda, flow_id)
@@ -261,8 +264,8 @@ class OpticalAgent(app_manager.RyuApp):
             wavelength = _nlambda - 1
             output_power, output_noise = self.estimate_output_power_noise(datapath.id, input_power, input_noise, wavelength, flow_id, out_port)
             # Update structure switch_to_ports
-            self.switch_to_ports[datapath.id][out_port][0][wavelength] = output_power
-            self.switch_to_ports[datapath.id][out_port][1][wavelength] = output_noise
+#            self.switch_to_ports[datapath.id][out_port][0][wavelength] = output_power
+#            self.switch_to_ports[datapath.id][out_port][1][wavelength] = output_noise
             
             #output_power, output_noise = self.power_cal(flow_id, datapath.id, in_port, out_port, _lambda, input_power, input_noise)
             sleep(0.01)
@@ -271,25 +274,54 @@ class OpticalAgent(app_manager.RyuApp):
 
             if self.is_last_node_in_path(datapath.id, flow_id):
                 osnr_list = []
-
-                for path_id in self.paths:
+                power_list = []
+                noise_list = []
+                for path_id in sorted(self.paths.iterkeys()):
                     if path_id is not 0:
                         path = self.paths[path_id]
                         t_lambda = self.flow_to_wavelength[path_id] - 1
                         t_osnr_list = []
+                        t_power_list = []
+                        t_noise_list = []
                         for _tuple in path:
                             # _tuple -> (node_ID, in_port, out_port)
                             t_node_id = _tuple[0]
                             t_out_port = _tuple[2]
                             t_out_power = self.switch_to_ports[t_node_id][t_out_port][0][t_lambda]
                             t_out_noise = self.switch_to_ports[t_node_id][t_out_port][1][t_lambda]
+                            
+                            t_power_list.append(t_out_power)
+                            t_noise_list.append(t_out_noise)
 
                             t_osnr = t_out_power / t_out_noise
 
                             t_osnr_list.append(t_osnr)
-
+                            
+                        power_list.append(t_power_list)
+                        noise_list.append(t_noise_list)
                         osnr_list.append(t_osnr_list)
 
+                print("Class OpticalAgent: packet_in_handler: Attempting to write into files!")
+                ################################
+                with open('/var/opt/Optical-Network-Emulation/agent/multi_domain/logs/power/power_' + str(self.log_no) + '_log.log', 'a+') as outfile:
+                     json.dump(power_list, outfile)
+                     sleep(0.01)
+                     outfile.write('\n')
+                     outfile.close()
+
+                with open('/var/opt/Optical-Network-Emulation/agent/multi_domain/logs/noise/noise_' + str(self.log_no) + '_log.log', 'a+') as outfile:
+                     json.dump(noise_list, outfile)
+                     sleep(0.01)
+                     outfile.write('\n')
+                     outfile.close()
+                         
+                with open('/var/opt/Optical-Network-Emulation/agent/multi_domain/logs/osnr/osnr_' + str(self.log_no) + '_log.log', 'a+') as outfile:
+                     json.dump(osnr_list, outfile)
+                     sleep(0.01)
+                     outfile.write('\n')
+                     outfile.close()
+                ################################
+                self.log_no = self.log_no + 1
                 print(osnr_list)
                 print("####################################################")
 
@@ -513,14 +545,17 @@ class OpticalAgent(app_manager.RyuApp):
 
     def estimate_output_power_noise(self, node_id, input_power, input_noise, wavelength, flow_id, out_port):
         
-        print("estimate_output_power_noise: Entering with out_port: ", out_port)
-        print("estimate_output_power_noise: Entering with _lambda: ", wavelength)
+        #print("estimate_output_power_noise: Entering with out_port: ", out_port)
+        #print("estimate_output_power_noise: Entering with _lambda: ", wavelength)
 
         if(self.is_last_node_in_path(node_id, flow_id)):
-            print("estimate output power: LAST NODE")
+            #print("estimate output power: LAST NODE")
             self.abs_WSS_loss = self.dB_to_abs(9)
             output_power = input_power / self.abs_WSS_loss
             output_noise = input_noise / self.abs_WSS_loss
+            # Update structure switch_to_ports
+            self.switch_to_ports[node_id][out_port][0][wavelength] = output_power
+            self.switch_to_ports[node_id][out_port][1][wavelength] = output_noise
             return output_power, output_noise
 
         dst_node = self.get_next_node(flow_id, node_id)
@@ -532,7 +567,7 @@ class OpticalAgent(app_manager.RyuApp):
         amplifiers = self.amplifier_attenuation.get_amplifier_attenuation(link_ID)
 
         EDFA_NO = self.links.get_EDFA_NO(node_id, dst_node)
-        print("EDFA_NO: ", EDFA_NO)
+        #print("EDFA_NO: ", EDFA_NO)
         link_distance = self.links.get_link_distance(node_id, dst_node)
 
         amp_no = 0 # counter for amplifiers in link, applies for span_id too
@@ -541,11 +576,9 @@ class OpticalAgent(app_manager.RyuApp):
         sleep(0.01)
 
         for function_ID in amplifiers:
-            print("Entering for function_ID: %s" %function_ID)
+            #print("Entering for function_ID: %s" %function_ID)
             ripple_function = self.amplifier_attenuation.get_function(function_ID)
             amplifier_attenuation = ripple_function[wavelength]
-            
-            print("Fine")
 
             if amp_no == EDFA_NO-1:
                 target_gain = self.compute_gain_last_span(input_power)
@@ -563,40 +596,35 @@ class OpticalAgent(app_manager.RyuApp):
             output_power = target_gain * input_power * amplifier_attenuation
             output_noise = self.calculate_out_noise(input_noise, wavelength, target_gain*amplifier_attenuation)
 
-            print("estimate_output_power_noise: Power and noise computed.")
-
             # insert "new" channel-power_level relation to active_channels.
             #if amp_no < EDFA_NO-1:
-            print("insert new channel-power_level relation to active_channels, amp_no: ", amp_no)
             self.links.set_active_channel(link_ID, amp_no, wavelength, output_power, output_noise, amplifier_attenuation)
 
             # This is done at this point, because the input_power to be used
             # for the computation of the output_power is already sharing
             # the fibre with other channels (if any).
             active_channels_per_span = self.links.get_active_channels(link_ID, amp_no)
-            print("estimate_output_power_noise: get active channel")
+            #print("Class OpticalAgent: estimate_output_power_noise: active_channels_per_span: %s" %active_channels_per_span)
             # Check if active channels is  not single channel, or
             # if the loop is not at the last EDFA.
             if (len(active_channels_per_span) > 1) and (amp_no < EDFA_NO-1):
-                print("Class OpticalAgent: estimate_output: Entered SRS-NORMALIZATION-EXCURSION")
                 # compute SRS impairment
                 new_active_channels_per_span = self.links.calculate_SRS(active_channels_per_span, fibre_span)
+                #print("Class OpticalAgent: estimate_output_power_noise: new_active_channels_per_span: %s" %new_active_channels_per_span)
                 self.links.update_active_channels(link_ID, amp_no, new_active_channels_per_span)
-                print("Class OpticalAgent: estimate_output_power_noise: update_active_channels OK")
                 # Store not normalized power and noise levels
                 # to be considered in the power excursion calculation
                 not_normalized_power,  not_normalized_noise = self.links.get_active_channels_power_noise(link_ID, amp_no)
-                print("Class OpticalAgent: estimate_output_power_noise: get_active_channels_power_noise OK")
                 sleep(0.5)
                 # Consider channel-normalization per-span
                 self.links.normalize_channel_levels(link_ID, amp_no)
-                print("Class OpticalAgent: estimate_output_power_noise: normalize_channel_levels OK")
                 # Consider power excursion and propagation per-span
                 EXCURSION_OK = self.links.power_excursion_propagation(link_ID,  amp_no,  not_normalized_power,  not_normalized_noise)
                 
-                if EXCURSION_OK:
-                    print("Class OpticalAgent: estimate_output_power_noise: EXCURSION_OK")
-                else:
+                active_channels_per_span = self.links.get_active_channels(link_ID, amp_no)
+                #print("Class OpticalAgent: estimate_output_power_noise: active_channels_per_span: %s" %active_channels_per_span)
+                
+                if not EXCURSION_OK:
                     print("Class OpticalAgent: estimate_output_power_noise: EXCURSION_OK error")
                     
                 output_power = self.links.get_power_level(link_ID, amp_no, wavelength)
@@ -604,14 +632,31 @@ class OpticalAgent(app_manager.RyuApp):
             # compute power and noise without considering SRS
 
             # This is ignored in last computation.
-            print("Class OpticalAgent: estimate_output: computing input_power:")
             input_power = output_power / self.abs_fiber_loss
-            print("Class OpticalAgent: estimate_output: computing input_noise:")
             input_noise = output_noise / self.abs_fiber_loss
 
             amp_no = amp_no + 1
-        print("Class OpticalAgent: estimate_output: returning power: and noise: %s" %output_noise)
+            
+#        # Update structure switch_to_ports for newly installed path
+#        self.switch_to_ports[node_id][out_port][0][wavelength] = output_power
+#        self.switch_to_ports[node_id][out_port][1][wavelength] = output_noise
+        
+        # Update structure switch_to_ports for the modified paths
+        self.update_switch_to_ports(link_ID,  node_id,  out_port,  EDFA_NO)
         return output_power, output_noise
+        
+    def update_switch_to_ports(self,  link_id,  node_id,  out_port,  EDFA_NO):
+        print("Class OpticalAgent: update_switch_to_ports: Entered for node: %s" %node_id)
+        last_amplifier = EDFA_NO - 1
+        active_channels_per_span = self.links.get_active_channels(link_id, last_amplifier)
+        print("Class OpticalAgent: update_switch_to_ports: active_channels_per_span: %s" %active_channels_per_span)
+        for channel in active_channels_per_span:
+            new_output_power = self.links.get_power_level(link_id,  last_amplifier,  channel)
+            new_output_noise = self.links.get_noise_level(link_id,  last_amplifier,  channel)
+            # Update structure switch_to_ports
+            self.switch_to_ports[node_id][out_port][0][channel] = new_output_power
+            self.switch_to_ports[node_id][out_port][1][channel] = new_output_noise
+        
 
     def calculate_out_noise(self, input_noise, n_lambda, sys_gain):
         try:

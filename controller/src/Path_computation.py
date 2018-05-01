@@ -50,6 +50,10 @@ class Path_computation(app_manager.RyuApp):
         # Converting 6dB loss
         self.abs_WSS_loss = self.dB_to_abs(9) # constant
         self.link_distance_mapping = link_distance_mapping.main()
+        
+        # TEMPORAL FOR TESTING PURPOSES - START
+        self.CHANNEL_AVAIL = 1
+        # TEMPORAL FOR TESTING PURPOSES - END
 
     @set_ev_cls(Custom_event.IntraDomainPathCompRequestEvent)
     def _handle_intra_domain_traffic_pc_request(self,ev): 
@@ -106,7 +110,10 @@ class Path_computation(app_manager.RyuApp):
                     Database.Data.intra_domain_path_list.insert_a_new_path(path)    #record the result of routing
                 # The channel to be used is assigned in
                 # RWA.rsc_allocation(traf_id, bw_dmd)
-                resources = RWA.rsc_allocation(ev.traf_id, traf.bw_dmd)
+                tmp_list = []
+                tmp_list.append(self.CHANNEL_AVAIL)
+                resources = RWA.rsc_allocation(ev.traf_id, traf.bw_dmd,  tmp_list)
+                self.CHANNEL_AVAIL = self.CHANNEL_AVAIL + 1
                 for path_item in resources:
                     new_path = Database.Data.intra_domain_path_list.find_a_path_by_id(path_item[0])
                     if new_path == None:

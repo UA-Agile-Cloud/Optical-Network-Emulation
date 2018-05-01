@@ -2,11 +2,7 @@
 import socket
 import sys
 import json
-
-MININET_SERVER_PORT = 20001
-#MININET_SERVER_IP = '10.129.36.255'
-#MININET_SERVER_IP = '134.226.55.100'
-MININET_SERVER_IP = '127.0.0.1'
+from macros import MININET_SERVER_IP, MININET_SERVER_PORT
 
 def main(flow_id, src_node, dst_node, wavelength):
 
