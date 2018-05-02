@@ -128,7 +128,7 @@ class Link():
             print("Err: update_active_channels: Unable to update active channels at span: ", span_id)
             
     def update_active_channels_dict(self,  link_id, span_id, active_channels_per_span_list,  index):
-            channels = [channel for channel in self.active_channels_per_link[link_id][span_id][0]]
+            channels = [channel for channel in sorted(self.active_channels_per_link[link_id][span_id][0])]
             for i in range(0, len(channels)):
                 channel_key = channels[i]
                 self.active_channels_per_link[link_id][span_id][index][channel_key] = active_channels_per_span_list[i]
@@ -173,8 +173,8 @@ class Link():
         grid = 0.4*nm; #Assume 50GHz spacing DWDM
         min_wavelength_index = min(channel_powers.keys())
         max_wavelength_index = max(channel_powers.keys())
-        wavelength_min = 1529.2*nm + min_wavelength_index*grid
-        wavelength_max = 1529.2*nm + max_wavelength_index*grid
+        wavelength_min = 1530*nm + min_wavelength_index*grid
+        wavelength_max = 1530*nm + max_wavelength_index*grid
         frequency_min = c/(wavelength_max) #minimum frequency of longest wavelength
         frequency_max = c/(wavelength_min) #maximum frequency of shortest wavelength 
         Aeff = 80*um*um  #SMF effective area  

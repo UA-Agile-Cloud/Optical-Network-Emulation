@@ -70,6 +70,6 @@ if __name__ == "__main__":
     channel_powers = {}
     for channel_index in range(0,90,5):
         channel_powers[channel_index] = -2.0
-    print channel_powers
+    print(channel_powers)
     span_length = 80.0 
-    print calculate_SRS(channel_powers,span_length)
+    print(calculate_SRS(channel_powers,span_length))

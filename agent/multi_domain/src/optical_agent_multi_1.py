@@ -607,7 +607,7 @@ class OpticalAgent(app_manager.RyuApp):
             #print("Class OpticalAgent: estimate_output_power_noise: active_channels_per_span: %s" %active_channels_per_span)
             # Check if active channels is  not single channel, or
             # if the loop is not at the last EDFA.
-            if (len(active_channels_per_span) > 1) and (amp_no < EDFA_NO-1):
+            if (len(active_channels_per_span) > 1):# and (amp_no < EDFA_NO-1):
                 # compute SRS impairment
                 new_active_channels_per_span = self.links.calculate_SRS(active_channels_per_span, fibre_span)
                 #print("Class OpticalAgent: estimate_output_power_noise: new_active_channels_per_span: %s" %new_active_channels_per_span)
@@ -621,7 +621,7 @@ class OpticalAgent(app_manager.RyuApp):
                 # Consider power excursion and propagation per-span
                 EXCURSION_OK = self.links.power_excursion_propagation(link_ID,  amp_no,  not_normalized_power,  not_normalized_noise)
                 
-                active_channels_per_span = self.links.get_active_channels(link_ID, amp_no)
+                #active_channels_per_span = self.links.get_active_channels(link_ID, amp_no)
                 #print("Class OpticalAgent: estimate_output_power_noise: active_channels_per_span: %s" %active_channels_per_span)
                 
                 if not EXCURSION_OK:

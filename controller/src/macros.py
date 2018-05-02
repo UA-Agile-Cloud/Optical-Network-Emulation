@@ -122,10 +122,10 @@ telefonica_virtual_links = [	(1, 2),
 			(20, 21)]
 
 
-small_linear_links_distance = [	(1, 2, 300),
-			(2, 3, 300),			
-			(3, 4, 300),
-			(4, 5, 300)]
+small_linear_links_distance = [	(1, 2, 100),
+			(2, 3, 100),			
+			(3, 4, 100),
+			(4, 5, 100)]
 
 small_linear_virtual_ports_per_node = [	2,
 				3,
