@@ -1,0 +1,16 @@
+This folder contains python codes for the project 'Neural Network based quality of transmission prediction'. Should you have questions, please contact Weiyang Mo: wmo@optics.arizona.edu
+
+Note1: All codes are running under Python 2.7. There might be some compability issues under Python 3
+
+Note2: You may notice for classifier and regressor, the file name may end up with _sklearn or _keras. At the starting of the project, I use sklearn because it is simple to implement. However it does not support fine-tuning/transfer learning. So I jump to Keras. If you want to know about transfer learning, please only take a look at BER_classifier_keras and BER_regressor_keras
+
+Note3: Dependencies are required to run these python files. Please install sklearn, keras, and tensorflow.
+
+
+BER_classifier_keras: Use keras to build a neural network to do Q-factor classification.
+
+BER_regressor_keras: Use keras to build a nerual network regressor to predict Q-factor
+ParseData_BER: Parse the data from txt file.
+
+Datacollection: Contains several files to automate data collection and channel power configuration.
+
