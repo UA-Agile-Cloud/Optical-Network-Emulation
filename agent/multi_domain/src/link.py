@@ -101,6 +101,14 @@ class Link():
         except:
             print("Err: set_active_channel: Unable to insert active channel: ", str(channel))
             
+    def remove_active_channel(self,  link_id, span_id, channel):
+        try:
+            self.active_channels_per_link[link_id][span_id][0].pop(channel)
+            self.active_channels_per_link[link_id][span_id][1].pop(channel) 
+            self.active_channels_per_link[link_id][span_id][2].pop(channel)
+        except:
+            print("Err: remove_active_channel: Unable to remove active channel: ", str(channel))
+            
     def get_power_level(self, link_id, span_id, channel):
         try:
             return self.active_channels_per_link[link_id][span_id][0][channel]

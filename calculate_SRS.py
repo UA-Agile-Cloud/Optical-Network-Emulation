@@ -28,7 +28,6 @@ def calculate_SRS (channel_powers, span_length):
                                   e.g., {2:-3.3, 85:-0.9}
     """
     c = 299792458.0 #Speed of light
-    m = 1.0
     nm = 1.0e-9 
     cm = 1.0e-2
     um = 1.0e-6
@@ -70,6 +69,9 @@ if __name__ == "__main__":
     channel_powers = {}
     for channel_index in range(0,90,5):
         channel_powers[channel_index] = -2.0
-    print(channel_powers)
-    span_length = 80.0 
-    print(calculate_SRS(channel_powers,span_length))
+    #print(channel_powers)
+    span_length = 80.0
+    a = calculate_SRS(channel_powers,span_length)
+    print(a)
+    a.pop(35)
+    print(calculate_SRS(a,span_length))

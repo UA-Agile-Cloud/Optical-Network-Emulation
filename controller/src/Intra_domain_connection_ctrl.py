@@ -323,7 +323,6 @@ class Intra_domain_connection_ctrl(app_manager.RyuApp):
     def _handle_lsp_teardown_request(self,ev):
         """Intra-domain lightpath teardown 
         """
-        #pass
         #for all the provisioned lsps with lsp.traf_id == ev.traf_id
         #   send OFPT_TEARDOWN_CONFIG_WSS_REQUEST message
         #setup a timer in south_timer
@@ -340,40 +339,26 @@ class Intra_domain_connection_ctrl(app_manager.RyuApp):
         # print Database.Data.lsp_list.lsp_list[0].traf_id
         # print '=========teardown_LSP_list_len================='
         for this_lsp in Database.Data.lsp_list.lsp_list:
-	    # print '---------lsp_loop!!!!------------'
-	    # print this_lsp.traf_id
-            if (this_lsp.traf_id == this_lsp.traf_id):
+            if (this_lsp.traf_id == new_timer.traf_id):
+                print("_handle_lsp_teardown_request: this_lsp.traf_id: %s" %str(this_lsp.traf_id))
                 this_msgs = Database.LSP_msg_list()
-#                print('this_msgs')
-#                print(this_msgs)
-		#print '----------get_this_msgs_teardown------------'
                 this_msgs.lsp_id = this_lsp.lsp_id
                 this_msgs.route_type = this_lsp.route_type
                 new_timer.lsp_msg_list.append(this_msgs)
                 for key,this_node in enumerate(this_lsp.explicit_route.route):
-                    Database.Data.message_id += 1 
-                    # print '==============Database.Data.message_id==============='
-                    # print Database.Data.message_id
-
-                    # print len(this_lsp.explicit_route.route)
-
-                    # print '==============Database.Data.message_id==============='
-
-                    #new_msgs.msgs.append(Database.Data.message_id)
-
+                    Database.Data.message_id += 1
                     this_msgs.msgs[key] = Database.Data.message_id
-                    # print '==============this_msgs.msgs[key]==============='
-                    # print this_msgs.msgs[key]
-                    # print '==============this_msgs.msgs[key]==============='
-                self.logger.debug(str(this_msgs.msgs))
+                    print('==============this_msgs.msgs[key]===============')
+                    print(this_msgs.msgs[key])
+                    print('==============this_msgs.msgs[key]===============')
                 if Database.Data.south_teardown_time == 0:    
-                    Database.Data.south_teardown_time = time.time()
+                    Database.Data.south_teardown_time = time.time() 
                 else:
                     self.logger.critical('south_teardown_time error! \n')
                 FLAG_ALT = 1
                 for key,this_node in enumerate(this_lsp.explicit_route.route):
                     print('Entering to generation OFP_TEARDOWN')
-                    dpid = Database.Data.phy_topo.get_node_id_by_ip(new_node.node_ip)
+                    dpid = Database.Data.phy_topo.get_node_id_by_ip(this_node.node_ip)
                     datapath = Database.Data.ip2datapath[this_node.node_ip]
                     msg_id = this_msgs.msgs[key]
                     mod = datapath.ofproto_parser.OFPTTeardownConfigWSSRequest(datapath,
@@ -395,29 +380,7 @@ class Intra_domain_connection_ctrl(app_manager.RyuApp):
                     self.logger.debug('output_port_id = %d' % this_node.drop_port_id)
                     hub.sleep(0.05)
                     FLAG_ALT = FLAG_ALT + 1
-                    #new_msgs.msgs.append(Database.Data.message_id)
-                # if (FLAG_ALT == len(this_msgs.msgs)):
-                #     new_timer.lsp_msg_list.remove(this_msgs)
-                #     Database.Data.south_timer.remove(new_timer)
-#                print('new_time.lsp_msg_list')
-#                print(new_timer.lsp_msg_list)
-                # if (new_timer.lsp_msg_list.msgs == {}):
-                # #if (new_timer.lsp_msg_list == []) and (new_timer in Database.Data.south_timer):
-                #     Database.Data.south_timer.remove(new_timer)
-                #     self.logger.info('No unprovisioned LSPs are found! (Intra_domain_connection_ctrl: _handle_lsp_teardown_request)')
-                    #new_msgs.msgs.append(Database.Data.message_id)
-                    # print('len this_msgs.msgs')
-                    # print(len(this_msgs.msgs))
-                    # print('new_timer.lsp_msg_list')
-                    # print(type(new_timer.lsp_msg_list)
-	
-        '''# for testing
-        ev_lsp_teardown_reply = Custom_event.South_LSPTeardownReplyEvent()
-              ev_lsp_teardown_reply.traf_id = new_timer.traf_id
-              ev_lsp_teardown_reply.result = SUCCESS
-        self.send_event('Cross_domain_connection_ctrl',ev_lsp_setup_reply)
-        Database.Data.south_timer.remove(new_timer)
-        #for testing end'''
+                break
         
     @set_ev_cls(Custom_event.South_LSPTeardownReplyEvent)
     def _handle_lsp_teardown_reply(self,ev):

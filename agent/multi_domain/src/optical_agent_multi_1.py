@@ -303,27 +303,30 @@ class OpticalAgent(app_manager.RyuApp):
 
                 print("Class OpticalAgent: packet_in_handler: Attempting to write into files!")
                 ################################
-                with open('/var/opt/Optical-Network-Emulation/agent/multi_domain/logs/power/power_' + str(self.log_no) + '_log.log', 'a+') as outfile:
+                file_no = ''
+                if self.log_no < 10:
+                    file_no = '0' + str(self.log_no)
+                else:
+                    file_no = str(self.log_no)
+                with open('/var/opt/Optical-Network-Emulation/agent/multi_domain/logs/power/power_' + file_no + '_log.log', 'a+') as outfile:
                      json.dump(power_list, outfile)
                      sleep(0.01)
                      outfile.write('\n')
                      outfile.close()
 
-                with open('/var/opt/Optical-Network-Emulation/agent/multi_domain/logs/noise/noise_' + str(self.log_no) + '_log.log', 'a+') as outfile:
+                with open('/var/opt/Optical-Network-Emulation/agent/multi_domain/logs/noise/noise_' + file_no + '_log.log', 'a+') as outfile:
                      json.dump(noise_list, outfile)
                      sleep(0.01)
                      outfile.write('\n')
                      outfile.close()
                          
-                with open('/var/opt/Optical-Network-Emulation/agent/multi_domain/logs/osnr/osnr_' + str(self.log_no) + '_log.log', 'a+') as outfile:
+                with open('/var/opt/Optical-Network-Emulation/agent/multi_domain/logs/osnr/osnr_' + file_no + '_log.log', 'a+') as outfile:
                      json.dump(osnr_list, outfile)
                      sleep(0.01)
                      outfile.write('\n')
                      outfile.close()
                 ################################
                 self.log_no = self.log_no + 1
-                print(osnr_list)
-                print("####################################################")
 
             # Packet processing for sending OpenFlow Message.
             # Virtual port mapping
@@ -629,7 +632,6 @@ class OpticalAgent(app_manager.RyuApp):
                     
                 output_power = self.links.get_power_level(link_ID, amp_no, wavelength)
                 output_noise = self.links.get_noise_level(link_ID, amp_no, wavelength)
-            # compute power and noise without considering SRS
 
             # This is ignored in last computation.
             input_power = output_power / self.abs_fiber_loss
@@ -644,6 +646,65 @@ class OpticalAgent(app_manager.RyuApp):
         # Update structure switch_to_ports for the modified paths
         self.update_switch_to_ports(link_ID,  node_id,  out_port,  EDFA_NO)
         return output_power, output_noise
+
+    def remove_channel(self,  node_id, wavelength, flow_id, out_port):
+        if(self.is_last_node_in_path(node_id, flow_id)):
+            return 0
+
+        dst_node = self.get_next_node(flow_id, node_id)
+        # Based on the destination node, retrieve the link ID from self.links
+        # and match it to the amplifier_attenuation object.
+        # Then, iterate through the number of amplifiers, retrieving the corresponding
+        # ripple function.
+        link_ID = self.links.get_link_ID(node_id, dst_node)
+        amplifiers = self.amplifier_attenuation.get_amplifier_attenuation(link_ID)
+
+        EDFA_NO = self.links.get_EDFA_NO(node_id, dst_node)
+        #print("EDFA_NO: ", EDFA_NO)
+        link_distance = self.links.get_link_distance(node_id, dst_node)
+
+        amp_no = 0 # counter for amplifiers in link, applies for span_id too
+        fibre_span = STANDARD_SPAN
+        sleep(0.01)
+
+        for function_ID in amplifiers:
+            if amp_no == EDFA_NO-2:
+                fibre_span = self.get_last_span_length(EDFA_NO, link_distance)
+                sleep(0.01)
+
+            # Remove the link-span-channel register
+            self.links.remove_active_channel(link_ID, amp_no, wavelength)
+
+            print("Class OpticalAgent: remove_channel: Successfully removed active channel %s"  %wavelength)
+            # This is done at this point, because the input_power to be used
+            # for the computation of the output_power is already sharing
+            # the fibre with other channels (if any).
+            active_channels_per_span = self.links.get_active_channels(link_ID, amp_no)
+            #print("Class OpticalAgent: estimate_output_power_noise: active_channels_per_span: %s" %active_channels_per_span)
+            # Check if active channels is  not single channel, or
+            # if the loop is not at the last EDFA.
+            if (len(active_channels_per_span) > 1):# and (amp_no < EDFA_NO-1):
+                print("Class OpticalAgent: remove_channel: Entered with active_channels: " , len(active_channels_per_span))
+                # compute SRS impairment
+                new_active_channels_per_span = self.links.calculate_SRS(active_channels_per_span, fibre_span)
+                #print("Class OpticalAgent: estimate_output_power_noise: new_active_channels_per_span: %s" %new_active_channels_per_span)
+                self.links.update_active_channels(link_ID, amp_no, new_active_channels_per_span)
+                # Store not normalized power and noise levels
+                # to be considered in the power excursion calculation
+                not_normalized_power,  not_normalized_noise = self.links.get_active_channels_power_noise(link_ID, amp_no)
+                sleep(0.5)
+                # Consider channel-normalization per-span
+                self.links.normalize_channel_levels(link_ID, amp_no)
+                # Consider power excursion and propagation per-span
+                EXCURSION_OK = self.links.power_excursion_propagation(link_ID,  amp_no,  not_normalized_power,  not_normalized_noise)
+                
+                if not EXCURSION_OK:
+                    print("Class OpticalAgent: estimate_output_power_noise: EXCURSION_OK error")
+
+                amp_no = amp_no + 1
+        
+        # Update structure switch_to_ports for the modified paths
+        self.update_switch_to_ports(link_ID,  node_id,  out_port,  EDFA_NO)
         
     def update_switch_to_ports(self,  link_id,  node_id,  out_port,  EDFA_NO):
         print("Class OpticalAgent: update_switch_to_ports: Entered for node: %s" %node_id)
@@ -988,7 +1049,6 @@ class OpticalAgent(app_manager.RyuApp):
         logging.info('WSS_SETUP_REPLY Sent to RYU')
 
     def ofp_teardown_config_wss_request_handler(self, data):
-
         (datapath_id,
         message_id,
         ITU_standards,
@@ -1012,28 +1072,82 @@ class OpticalAgent(app_manager.RyuApp):
                                                             output_port_id,
                                                             start_channel,
                                                             end_channel))
-
-        #datapath = self.switches[datapath_id]
-        #datapath = self.switches[node_id]
-        #parser = datapath.ofproto_parser
-
         # Retrieve flow ID (experiment 1)
-        flow_id = experiment1
+        path_id = experiment1
         
         try:
-            if flow_id not in self.paths:
+            if path_id not in self.paths:
                 logging.debug('ofp_teardown_config_wss_request_handler: Non-existent flow.')
                 print('ofp_teardown_config_wss_request_handler: Non-existent flow.')
                 raise
             print('ofp_teardown_config_wss_request_handler: Attempting to remove flow:')
             print('node_id')
             print(node_id)
-            print('flow_id')
-            print(flow_id)
-            print('flows')
+            print('path_id')
+            print(path_id)
+            print('paths')
             print(self.paths)
-            if(self.is_last_node_in_path_remove(node_id, flow_id)):
-                self.remove_flow(flow_id)
+            self.remove_channel(node_id, start_channel, path_id, output_port_id)
+            print('ofp_teardown_config_wss_request_handler: OK remove_channel')
+            if(self.is_last_node_in_path(node_id, path_id)):
+                self.remove_flow(path_id)
+                #######################################################
+                #################UPDATED MAY 28TH 2018######################
+                osnr_list = []
+                power_list = []
+                noise_list = []
+                for path_id in sorted(self.paths.iterkeys()):
+                    if path_id is not 0:
+                        path = self.paths[path_id]
+                        t_lambda = self.flow_to_wavelength[path_id] - 1
+                        t_osnr_list = []
+                        t_power_list = []
+                        t_noise_list = []
+                        for _tuple in path:
+                            # _tuple -> (node_ID, in_port, out_port)
+                            t_node_id = _tuple[0]
+                            t_out_port = _tuple[2]
+                            t_out_power = self.switch_to_ports[t_node_id][t_out_port][0][t_lambda]
+                            t_out_noise = self.switch_to_ports[t_node_id][t_out_port][1][t_lambda]
+                            
+                            t_power_list.append(t_out_power)
+                            t_noise_list.append(t_out_noise)
+
+                            t_osnr = t_out_power / t_out_noise
+
+                            t_osnr_list.append(t_osnr)
+                            
+                        power_list.append(t_power_list)
+                        noise_list.append(t_noise_list)
+                        osnr_list.append(t_osnr_list)
+
+                print("Class OpticalAgent: ofp_teardown_config_wss_request_handler: Attempting to write into files!")
+                ################################
+                file_no = ''
+                if self.log_no < 10:
+                    file_no = '0' + str(self.log_no)
+                else:
+                    file_no = str(self.log_no)
+                with open('/var/opt/Optical-Network-Emulation/agent/multi_domain/logs/power/power_' + file_no + '_log.log', 'a+') as outfile:
+                     json.dump(power_list, outfile)
+                     sleep(0.01)
+                     outfile.write('\n')
+                     outfile.close()
+
+                with open('/var/opt/Optical-Network-Emulation/agent/multi_domain/logs/noise/noise_' + file_no + '_log.log', 'a+') as outfile:
+                     json.dump(noise_list, outfile)
+                     sleep(0.01)
+                     outfile.write('\n')
+                     outfile.close()
+                         
+                with open('/var/opt/Optical-Network-Emulation/agent/multi_domain/logs/osnr/osnr_' + file_no + '_log.log', 'a+') as outfile:
+                     json.dump(osnr_list, outfile)
+                     sleep(0.01)
+                     outfile.write('\n')
+                     outfile.close()
+                ################################
+                self.log_no = self.log_no + 1
+                ################# END UPDATED MAY 28TH 2018##################
             logging.debug('ofp_teardown_config_wss_request_handler: Successfully removed the flow.')
             print('ofp_teardown_config_wss_request_handler: Successfully removed the flow.')
             return 0
