@@ -22,6 +22,7 @@ import link_distance_mapping
 from time import sleep
 import random
 import numpy as np
+import macros
 
 logging.basicConfig(level = log_level)
 
@@ -52,7 +53,9 @@ class Path_computation(app_manager.RyuApp):
         self.link_distance_mapping = link_distance_mapping.main()
         
         # TEMPORAL FOR TESTING PURPOSES - START
-        self.CHANNEL_AVAIL = 1
+        self.CHANNEL_AVAIL = 1  # For incremental usage of channels
+                                               # i.e. 1, 2, 3, etc.
+        self.CHANNELS = macros.CHANNELS
         # TEMPORAL FOR TESTING PURPOSES - END
 
     @set_ev_cls(Custom_event.IntraDomainPathCompRequestEvent)
@@ -111,9 +114,11 @@ class Path_computation(app_manager.RyuApp):
                 # The channel to be used is assigned in
                 # RWA.rsc_allocation(traf_id, bw_dmd)
                 tmp_list = []
-                tmp_list.append(self.CHANNEL_AVAIL)
+                channel_to_use = self.CHANNELS.pop(0)
+                #tmp_list.append(self.CHANNEL_AVAIL)
+                tmp_list.append(channel_to_use)
                 resources = RWA.rsc_allocation(ev.traf_id, traf.bw_dmd,  tmp_list)
-                self.CHANNEL_AVAIL = self.CHANNEL_AVAIL + 1
+                #self.CHANNEL_AVAIL = self.CHANNEL_AVAIL + 1
                 for path_item in resources:
                     new_path = Database.Data.intra_domain_path_list.find_a_path_by_id(path_item[0])
                     if new_path == None:

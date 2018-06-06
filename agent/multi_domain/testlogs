@@ -1,0 +1,3 @@
+#!/bin/bash
+cd logs; touch test-file.txt
+echo "it works!" > test-file.txt

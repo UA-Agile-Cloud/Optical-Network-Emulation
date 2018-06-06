@@ -204,15 +204,13 @@ class South_bound_message_receive(app_manager.RyuApp):
     
     @set_ev_cls(ofp_event.EventOFPTTeardownConfigWSSReply,[CONFIG_DISPATCHER,MAIN_DISPATCHER,DEAD_DISPATCHER])
     def handle_teardown_reply(self,ev):
-        #return
         msg = ev.msg
         (datapath_id,message_id,result) = (msg.datapath_id,msg.message_id,msg.result)
         try:
             datapath=Database.Data.dpid2datapath[int(datapath_id)]
         except:
             print('Bad things occur......Datapath not found...')
-        self.logger.info('RYU get WSS_TEARDOWN_CONFIG_REPLY from agent %s' % datapath_id)
-        
+        self.logger.info('South_bound_message_receiving: handle_teardown_reply: RYU get a WSS_TEARDOWN_CONFIG_REPLY from agent %s' % datapath.id)
         if (Database.Data.msg_in_south_timer(message_id) == False) and (Database.Data.msg_in_south_timer_no_response(message_id) == False):
             self.logger.info('Cannot find this reply message in timer! (South_bound_message_receive: handle_teardown_reply)')
             return
@@ -224,10 +222,9 @@ class South_bound_message_receive(app_manager.RyuApp):
                         for tmp_lsp_msg_list in tmp_timer.lsp_msg_list:
                             for key,msg_id in tmp_lsp_msg_list.msgs.items():
                                 if msg_id == message_id:
-                                    self.logger.info('South_bound_message_receive module receives a success setup reply. msg_id = %d' % message_id)
+                                    #self.logger.info('South_bound_message_receive module receives a success teardown reply. msg_id = %d' % message_id)
                                     flag_find_msg = True
                                     del tmp_lsp_msg_list.msgs[key]
-                                    #tmp_lsp_msg_list.msgs = filter(lambda msg: msg != message_id, tmp_lsp_msg_list.msgs)
                                     if not tmp_lsp_msg_list.msgs:
                                         tmp_timer.lsp_msg_list.remove(tmp_lsp_msg_list)
                                         break
@@ -243,15 +240,8 @@ class South_bound_message_receive(app_manager.RyuApp):
                             else:
                                 self.logger.info('Invalid traffic type! (South_bound_message_receive: handle_teardown_reply)')
                             Database.Data.south_timer.remove(tmp_timer)
-			    #for recording excusion time
-			    # with open('record_time.txt', 'a') as f:
-			    #     f.write('South teardown time: \n')
-			    #     f.write(str(time.time() - Database.Data.south_teardown_time)+'\n')
-			    Database.Data.south_teardown_time = 0
-			    #for recording excusion time end
-                            break
-                        if flag_find_msg == True:
-                            break
+
+
             elif result == FAIL:
                 flag_find_msg = False
                 for tmp_timer in Database.Data.south_timer:
@@ -273,10 +263,10 @@ class South_bound_message_receive(app_manager.RyuApp):
                                     self.logger.info('Invalid traffic type! (South_bound_message_receive: handle_teardown_reply)')
                                 Database.Data.south_timer.remove(tmp_timer)
                                 break
-                        if flag_find_msg == True:
-                            break
-            else:
-                self.logger.info('Invalid LSP teardown result! (South_bound_message_receive: handle_teardown_reply)')
+                            if flag_find_msg == True:
+                                break
+                            else:
+                                self.logger.info('Invalid LSP teardown result! (South_bound_message_receive: handle_teardown_reply)')
         else:   #Database.Data.msg_in_south_timer_no_response(message_id) == True:
             if result == SUCCESS:
                 flag_find_msg = False
@@ -293,25 +283,21 @@ class South_bound_message_receive(app_manager.RyuApp):
                                         self.logger.info('Recover phytopo fail! (South_bound_message_receive: handle_teardown_reply)')
                                     tmp_timer.lsp_msg_list.remove(tmp_lsp_msg_list)
                                     break
-                        if tmp_timer.lsp_msg_list == []:
-                            Database.Data.south_timer.remove(tmp_timer)
+                                if tmp_timer.lsp_msg_list == []:
+                                    Database.Data.south_timer.remove(tmp_timer)
 			    #for recording excusion time
-			    this_traf = Database.Data.traf_list.find_traf_by_id(tmp_timer.traf_id)
-			    if this_traf == None:
-			        self.logger.critcal('Cannot find traffic %d. (Cross_domain_connection_ctrl: _handle_lsp_setup_reply)' % ev.traf_id)
-			        return
-			    with open('record_time.txt', 'a') as f:
-			        f.write('South teardown path time: (route_type = ')
-			        if this_traf.traf_state == TRAFFIC_INTRA_DOMAIN_REROUTE_SUCCESS:
-				    f.write(str(ROUTE_WORKING)+')\n')
-			        else :
-				    f.write(str(ROUTE_REROUTE)+')\n')
-			        f.write(str(time.time() - Database.Data.south_teardown_path_time)+'\n')
-			    Database.Data.south_teardown_path_time = 0
-			    #for recording excusion time end
-                            break
-                        if flag_find_msg == True:
-                            break
+                this_traf = Database.Data.traf_list.find_traf_by_id(tmp_timer.traf_id)
+                if this_traf == None:
+                    self.logger.critcal('Cannot find traffic %d. (Cross_domain_connection_ctrl: _handle_lsp_setup_reply)' % ev.traf_id)
+                    return
+#			    with open('record_time.txt', 'a') as f:
+#			        f.write('South teardown path time: (route_type = ')
+#			        if this_traf.traf_state == TRAFFIC_INTRA_DOMAIN_REROUTE_SUCCESS:
+#				    f.write(str(ROUTE_WORKING)+')\n')
+#			        else :
+#				    f.write(str(ROUTE_REROUTE)+')\n')
+#			        f.write(str(time.time() - Database.Data.south_teardown_path_time)+'\n')
+                Database.Data.south_teardown_path_time = 0
             elif result == FAIL:
                 flag_find_msg = False
                 for tmp_timer in Database.Data.south_timer:

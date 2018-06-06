@@ -320,7 +320,11 @@ public class RequestSending {
                 for(int j=0; j<url.length;j++) {
                     System.out.println(j);
                     post(url[j], params);   //posting to all domains
-                    TimeUnit.SECONDS.sleep(10);
+                    if(request[1].equals("add")) {
+                        TimeUnit.SECONDS.sleep(10);
+                    } else {
+                        TimeUnit.SECONDS.sleep(30);
+                    }
                     //System.out.println(params);
                 }
             }

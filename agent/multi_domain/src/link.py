@@ -195,7 +195,8 @@ class Link():
         Leff = (1-math.e**(-alpha*Lspan))/alpha #SMF effective distance
         P0 = 0 #Total input power calculated by following loop
         for power_per_channel in channel_powers.values():
-            P0 += 10**(power_per_channel/10.0)*mW
+            P0 += power_per_channel*mW
+            #P0 += 10**(power_per_channel/10.0)*mW
 
         #Calculate delta P for each channel
         for wavelength_index in channel_powers:  #Apply formula (10)
@@ -203,8 +204,9 @@ class Link():
             frequency = c/wavelength #Frequency of the wavelength of interest
             R1 = beta*P0*Leff*(frequency_max-frequency_min)*math.e**(beta*P0*Leff*(frequency_max-frequency)) #term 1
             R2 = math.e**(beta*P0*Leff*(frequency_max-frequency_min))-1 #term 2
-            delta_P = 10*math.log10(R1/R2)
-            channel_powers[wavelength_index] += round(delta_P,2)
+            #channel_powers[wavelength_index] += R1/R2
+            delta_P = 10*math.log10(R1/R2) # Does the aritmetics in dB
+            channel_powers[wavelength_index] *= 10**(delta_P/float(10)) # Instead of round(delta_P,2) convert to abs
             
         return channel_powers
 

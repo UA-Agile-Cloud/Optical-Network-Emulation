@@ -15,9 +15,9 @@ NOISE_FIGURE = 10**(6/float(10))
 BANDWIDTH = 12.5*(10E9)
 
 # Target/Launch signal power. Standard = -2dBm
-TARGET_POWER = 10**(-2/float(10))
+TARGET_POWER = 10**(-2/float(10)) # 0.63095734448
 TARGET_GAIN = 20
-IN_NOISE = 1e-10
+IN_NOISE = 10**(0/float(10)) # 1
 
 # Link span between EDFAs
 STANDARD_SPAN = int(100)

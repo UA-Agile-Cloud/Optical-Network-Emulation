@@ -1,4 +1,9 @@
 import math
+import numpy as np
+
+def abs_to_dB(value):
+        dB_value = 10*np.log10(value)
+        return dB_value
 
 def calculate_SRS (channel_powers, span_length):
     # Type channels_powers: dict - i.e. {2:-3.1, 85:-1.1}
@@ -67,11 +72,23 @@ def calculate_SRS (channel_powers, span_length):
 ##test case
 if __name__ == "__main__":
     channel_powers = {}
-    for channel_index in range(0,90,5):
-        channel_powers[channel_index] = -2.0
+    #for channel_index in range(0,90,5):
+    #    channel_powers[channel_index] = -2.0
+    channel_powers = {0: 0.4210845044496888, 1: 0.42628593482763394, 2: 0.5294042118158662, 3: 0.6026210167221147, 4: 0.9375659638792795, 5: 0.6285915004893756, 6: 0.5362242601966705, 7: 0.9153279042649272, 8: 0.9410504146911375, 9: 0.685968953542166, 10: 0.9321327171281036, 11: 0.42416641272112976, 12: 0.3866707596149439, 13: 0.2893173187606887, 14: 0.7932594017043094, 15: 1.21620774444789, 16: 0.9554614237800422, 17: 0.8115138358678698, 18: 0.7656003163978915, 19: 0.32877014957162426, 20: 0.9776207571780182, 21: 0.6022114272099104, 22: 0.8764996953237844, 23: 0.927428103216074, 24: 0.139054242044582, 25: 0.40675263494959496}
+    db_ch_pow = {}
+    for key in channel_powers.keys():
+        db_ch_pow[key] = abs_to_dB(channel_powers[key])
     #print(channel_powers)
-    span_length = 80.0
+    
+    #print(db_ch_pow)
+    span_length = 100.0
     a = calculate_SRS(channel_powers,span_length)
-    print(a)
-    a.pop(35)
-    print(calculate_SRS(a,span_length))
+    db_ch = {}
+    for key in a.keys():
+        db_ch[key] = abs_to_dB(a[key])
+    print(db_ch)
+    print("#################################################")
+    print("#################################################")
+    print("#################################################")
+    b = calculate_SRS(db_ch_pow,span_length)
+    print(b)

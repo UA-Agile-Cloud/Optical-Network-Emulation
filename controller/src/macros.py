@@ -144,3 +144,11 @@ VIRTUAL_LINKS = small_linear_virtual_links
 #VIRTUAL_LINKS_DISTANCE = telefonica_links_distance
 #VIRTUAL_PORTS_PER_NODE = telefonica_virtual_ports_per_node
 #VIRTUAL_LINKS = telefonica_virtual_links
+
+
+# MULTI-CHANNEL EXPERIMENT SEED
+CHANNELS = [40, 12, 45, 2, 10, 74, 67, 57, 3, 50, 5, 68, 69, 76, 79, 41, 27, 
+                    51, 6, 7, 53, 13, 65, 58, 59, 73, 15, 4, 18, 43, 25, 80, 20, 71, 72, 
+                    42, 52, 19, 30, 34, 32, 78, 62, 48, 26, 1, 33, 14, 17, 8, 23, 39, 28, 
+                    35, 38, 77, 31, 21, 56, 9, 63, 11, 49, 22, 16, 44, 64, 47, 75, 55, 60, 
+                    29, 24, 66, 36, 70, 46, 37, 61, 54]

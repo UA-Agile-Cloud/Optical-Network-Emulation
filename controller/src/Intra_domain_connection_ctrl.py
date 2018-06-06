@@ -145,6 +145,7 @@ class Intra_domain_connection_ctrl(app_manager.RyuApp):
                                             end_channel= new_lsp.occ_chnl[-1],
                                             experiment1= new_lsp.traf_id,
                                             experiment2=0)
+                    self.logger.info('a WSS setup config request is sent by RYU. (Intra_domain_connection_ctrl: _handle_lsp_setup_request)') 
                     datapath.send_msg(mod1)
                     hub.sleep(0.05)
                     FLAG_ALT = FLAG_ALT + 1
@@ -326,18 +327,12 @@ class Intra_domain_connection_ctrl(app_manager.RyuApp):
         #for all the provisioned lsps with lsp.traf_id == ev.traf_id
         #   send OFPT_TEARDOWN_CONFIG_WSS_REQUEST message
         #setup a timer in south_timer
+        ####################
         new_timer = Database.Timer()
         new_timer.traf_id = ev.traf_id
         new_timer.timer_type = TIMER_TRAFFIC_TEARDOWN
         new_timer.end_time = time.time() + SOUTH_WAITING_TIME
         Database.Data.south_timer.append(new_timer)
-        # print '=========teardown_LSP_list_traf================='
-        # print ev.traf_id
-        # print '=========teardown_LSP_list_traf================='
-        # print '=========teardown_LSP_list_len================='
-        # print len(Database.Data.lsp_list.lsp_list)
-        # print Database.Data.lsp_list.lsp_list[0].traf_id
-        # print '=========teardown_LSP_list_len================='
         for this_lsp in Database.Data.lsp_list.lsp_list:
             if (this_lsp.traf_id == new_timer.traf_id):
                 print("_handle_lsp_teardown_request: this_lsp.traf_id: %s" %str(this_lsp.traf_id))
@@ -357,11 +352,11 @@ class Intra_domain_connection_ctrl(app_manager.RyuApp):
                     self.logger.critical('south_teardown_time error! \n')
                 FLAG_ALT = 1
                 for key,this_node in enumerate(this_lsp.explicit_route.route):
-                    print('Entering to generation OFP_TEARDOWN')
                     dpid = Database.Data.phy_topo.get_node_id_by_ip(this_node.node_ip)
                     datapath = Database.Data.ip2datapath[this_node.node_ip]
                     msg_id = this_msgs.msgs[key]
-                    mod = datapath.ofproto_parser.OFPTTeardownConfigWSSRequest(datapath,
+                    mod = datapath.ofproto_parser.OFPTTeardownConfigWSSRequest(
+                                                                            datapath,
                                                                             datapath_id=dpid,
                                                                             message_id= msg_id,
                                                                             ITU_standards= ITU_C_50, 
@@ -372,19 +367,19 @@ class Intra_domain_connection_ctrl(app_manager.RyuApp):
                                                                             end_channel= this_lsp.occ_chnl[-1],
                                                                             experiment1=this_lsp.traf_id,
                                                                             experiment2=0)
-                    datapath.send_msg(mod)
                     self.logger.info('a WSS teardown config request is sent by RYU. (Intra_domain_connection_ctrl: _handle_lsp_teardown_request)') 
-                    #self.logger.debug('msg_id = %d' % msg_id)
-                    self.logger.debug('node_id = %d' % Database.Data.phy_topo.get_node_id_by_ip(this_node.node_ip))
-                    self.logger.debug('input_port_id = %d' % this_node.add_port_id)
-                    self.logger.debug('output_port_id = %d' % this_node.drop_port_id)
-                    hub.sleep(0.05)
+                    datapath.send_msg(mod)
+                    
+#                    self.logger.debug('node_id = %d' % Database.Data.phy_topo.get_node_id_by_ip(this_node.node_ip))
+#                    self.logger.debug('input_port_id = %d' % this_node.add_port_id)
+#                    self.logger.debug('output_port_id = %d' % this_node.drop_port_id)
+                    hub.sleep(6)
                     FLAG_ALT = FLAG_ALT + 1
-                break
+                #break
         
     @set_ev_cls(Custom_event.South_LSPTeardownReplyEvent)
     def _handle_lsp_teardown_reply(self,ev):
-        pass
+        #pass
         #if SUCCESS:
         #   update traffic state to TRAFFIC_TEARDOWN_SUCCESS
         #   recover Phy_topo 

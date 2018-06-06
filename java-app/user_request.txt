@@ -1,5 +1,23 @@
-1	add	1	5	0
-2	add	1	5	0
-3	add	1	5	0
-6   tear    1
-7   tear    2
+1 add 1 2 0
+2 add 1 2 0
+3 add 1 2 0
+4 add 1 2 0
+5 add 1 2 0
+6 add 1 2 0
+7 add 1 2 0
+8 add 1 2 0
+9 add 1 2 0
+10 add 1 2 0
+11 add 1 2 0
+12 add 1 2 0
+13 add 1 2 0
+14 add 1 2 0
+15 add 1 2 0
+16 add 1 2 0
+17 add 1 2 0
+18 add 1 2 0
+19 add 1 2 0
+20 add 1 2 0
+21 add 1 2 0
+22 add 1 2 0
+23 add 1 2 0

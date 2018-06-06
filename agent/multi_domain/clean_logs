@@ -1,0 +1,8 @@
+#!/bin/bash
+cd logs; rm -R *
+mkdir noise
+mkdir noise-40
+mkdir power
+mkdir power-40
+mkdir osnr
+mkdir osnr-40
