@@ -1,2 +1,0 @@
-#!/bin/bash
-ryu-manager --observe-links --ofp-tcp-listen-port 6654 optical_agent_multi_2.py

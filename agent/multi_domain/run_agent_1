@@ -1,3 +1,0 @@
-#!/bin/bash
-SRC_PATH='/var/opt/Optical-Network-Emulation/agent/multi_domain/src'
-ryu-manager --observe-links --ofp-tcp-listen-port 6653 $SRC_PATH/optical_agent_multi_1.py

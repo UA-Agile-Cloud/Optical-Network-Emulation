@@ -1,2 +1,0 @@
-#!/bin/bash
-python script_osnr_plotting_multi.py &
