@@ -1,5 +1,0 @@
-#!/bin/bash
-mn -c
-sleep 2
-kill -9 `ps aux | grep small-linear.py | grep root | awk '{print $2}'`
-#rm ../../public/network/node_to_ports

@@ -1,3 +1,0 @@
-#!/bin/bash
-SRC_PATH='/var/opt/Optical-Network-Emulation/network/telefonica'
-python $SRC_PATH/src/telefonica.py &
