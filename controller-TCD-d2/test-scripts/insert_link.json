@@ -1,0 +1,13 @@
+{
+    "link": [
+        {
+            "link_id": 1,
+            "tx_node": 1,
+            "tx_node_port": 1,
+            "rx_node": 2,
+            "rx_node_port":2,
+            "amplifier_no": 2,
+            "length": 100
+        }
+    ]
+}

@@ -1,0 +1,1 @@
+{"node": [{"status": 0, "node_id": 1, "port_no": 4, "dpid": "0000000000000001"}, {"status": 0, "node_id": 2, "port_no": 6, "dpid": "0000000000000002"}, {"status": 0, "node_id": 3, "port_no": 6, "dpid": "0000000000000003"}, {"status": 0, "node_id": 4, "port_no": 6, "dpid": "0000000000000004"}, {"status": 0, "node_id": 5, "port_no": 4, "dpid": "0000000000000005"}]}

@@ -1,0 +1,10 @@
+{
+    "lightpath": [
+        {
+            "lightpath_id": 1,
+            "tx_node": 1,
+            "rx_node": 2,
+            "status": 0
+        }
+    ]
+}

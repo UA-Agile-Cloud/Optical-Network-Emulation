@@ -1,0 +1,1 @@
+{"port": [{"type": 0, "port_id": 1, "description": "TX port"}, {"type": 1, "port_id": 2, "description": "RX port"}, {"type": 0, "port_id": 3, "description": "TX port"}, {"type": 1, "port_id": 4, "description": "RX port"}, {"type": 0, "port_id": 5, "description": "TX port"}, {"type": 1, "port_id": 6, "description": "RX port"}]}

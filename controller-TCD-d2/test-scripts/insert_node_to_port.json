@@ -1,0 +1,12 @@
+{
+    "node_to_port": [
+        {
+            "node_id": 1,
+            "port_id": 1
+        },
+        {
+            "node_id": 1,
+            "port_id": 2
+        }
+    ]
+}
