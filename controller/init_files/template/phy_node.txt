@@ -1,4 +1,0 @@
-node_num
-node_ip	node_id	node_type
-node_ip	node_id	node_type
-...

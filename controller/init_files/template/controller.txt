@@ -1,4 +1,0 @@
-this_ctrl_type	this_ctrl_ip	this_domain_id
-central_ctrl_type	central_ctrl_ip	central_domain_id
-local_ctrl_type	local_ctrl_ip	local_domain_id
-...
